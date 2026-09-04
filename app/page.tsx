@@ -414,7 +414,8 @@ export default function Home() {
       <section id="inicio" className="hero relative isolate border-b border-[#b9944f]/25 px-5 pb-20 pt-7 sm:px-10 lg:px-16">
         <div className="marble absolute inset-0 -z-20" />
         <ShaderBackdrop />
-        <div className="blush-orb absolute -right-24 top-20 -z-10 h-80 w-80 rounded-full" />
+        <div className="blush-orb absolute -right-24 top-12 -z-10 h-96 w-96 rounded-full" />
+        <div className="gold-orb" aria-hidden="true" />
         <nav className="atelier-nav mx-auto max-w-7xl">
           <a href="#inicio" className="brand-lockup">
             <span className="brand-mark" aria-hidden="true">V</span>
