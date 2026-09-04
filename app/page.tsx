@@ -9,6 +9,7 @@ import {
   Clock3,
   Gem,
   Heart,
+  HelpCircle,
   MessageCircle,
   Minus,
   Paintbrush,
@@ -19,6 +20,7 @@ import {
   Star,
   Trash2,
   WandSparkles,
+  X,
 } from 'lucide-react';
 import { es } from 'date-fns/locale';
 import { onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth';
@@ -87,6 +89,7 @@ export default function Home() {
   const [confirmed, setConfirmed] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [wizardStep, setWizardStep] = useState<number | null>(null);
 
   const techniques = catalog.techniques.filter((item) => item.active);
   const lengths = catalog.lengths.filter((item) => item.active);
@@ -156,6 +159,27 @@ export default function Home() {
   }), []);
 
   useEffect(() => {
+    try {
+      if (!window.localStorage.getItem('valentina-client-guide-v1')) setWizardStep(0);
+    } catch {
+      setWizardStep(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (wizardStep === null) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setWizardStep(null);
+    };
+    document.body.classList.add('wizard-open');
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.classList.remove('wizard-open');
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [wizardStep]);
+
+  useEffect(() => {
     if (!techniques.some((item) => item.id === technique) && techniques[0]) setTechnique(techniques[0].id);
     if (!lengths.some((item) => item.id === length) && lengths[0]) setLength(lengths[0].id);
     if (!shapes.some((item) => item.id === shape) && shapes[0]) setShape(shapes[0].id);
@@ -193,6 +217,16 @@ export default function Home() {
   const goToBooking = () => {
     setStage('booking');
     setTimeout(() => document.querySelector('#booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
+
+  const closeWizard = (startDesign = false) => {
+    try {
+      window.localStorage.setItem('valentina-client-guide-v1', 'seen');
+    } catch {
+      // The guide still closes when browser storage is unavailable.
+    }
+    setWizardStep(null);
+    if (startDesign) setTimeout(() => document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
   const confirmBooking = async () => {
@@ -461,6 +495,60 @@ export default function Home() {
         <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
         <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
       </footer>
+
+      {stage === 'design' && (
+        <div className="mobile-price-bar" aria-label="Resumen de precio">
+          <span><small>Tu set estimado</small><strong>{formatMoney(total)}</strong></span>
+          <Button onClick={goToBooking}>Elegir fecha <ArrowRight /></Button>
+        </div>
+      )}
+
+      <button className="guide-reopen" type="button" onClick={() => setWizardStep(0)} aria-label="Abrir guía de uso">
+        <HelpCircle /><span>¿Cómo funciona?</span>
+      </button>
+
+      {wizardStep !== null && (
+        <div className="wizard-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeWizard(); }}>
+          <dialog className="client-wizard" open aria-labelledby="wizard-title">
+            <button className="wizard-close" type="button" onClick={() => closeWizard()} aria-label="Cerrar guía"><X /></button>
+            <div className="wizard-progress" aria-label={`Paso ${wizardStep + 1} de 4`}>
+              {[0, 1, 2, 3].map((step) => <span key={step} className={step <= wizardStep ? 'active' : ''} />)}
+            </div>
+            <div className="wizard-visual" aria-hidden="true">
+              {wizardStep === 0 && <Sparkles />}
+              {wizardStep === 1 && <Gem />}
+              {wizardStep === 2 && <Paintbrush />}
+              {wizardStep === 3 && <CalendarDays />}
+              <span>{String(wizardStep + 1).padStart(2, '0')}</span>
+            </div>
+            <p className="eyebrow">Guía rápida · {wizardStep + 1} de 4</p>
+            <h2 id="wizard-title">{[
+              'Crea tu cita en minutos',
+              'Elige la base de tu set',
+              'Hazlo completamente tuyo',
+              'Reserva tu horario',
+            ][wizardStep]}</h2>
+            <p className="wizard-copy">{[
+              'Te acompañamos paso a paso. Verás el precio estimado mientras diseñas y no necesitas crear una cuenta.',
+              'Selecciona la técnica, el largo y la forma que prefieras. Puedes cambiar cualquier elección antes de reservar.',
+              'Suma decoraciones por uña, tonos y servicios extra. Usa los botones + y − para indicar cantidades.',
+              'Revisa tu total, elige una fecha y una hora disponible. Al confirmar, abriremos WhatsApp con todos los detalles listos.',
+            ][wizardStep]}</p>
+            <div className="wizard-tip"><Check /> <span>{[
+              'Tus elecciones no se cobran en esta página.',
+              'El precio cambia al instante con cada opción.',
+              'Puedes limpiar todo y empezar de nuevo.',
+              'Los horarios ocupados aparecen desactivados.',
+            ][wizardStep]}</span></div>
+            <div className="wizard-actions">
+              {wizardStep > 0 ? <button type="button" onClick={() => setWizardStep((step) => Math.max(0, (step ?? 0) - 1))}>Atrás</button> : <button type="button" onClick={() => closeWizard()}>Omitir guía</button>}
+              <Button onClick={() => wizardStep === 3 ? closeWizard(true) : setWizardStep((step) => Math.min(3, (step ?? 0) + 1))}>
+                {wizardStep === 3 ? 'Empezar mi diseño' : 'Siguiente'} <ArrowRight />
+              </Button>
+            </div>
+          </dialog>
+        </div>
+      )}
     </main>
   );
 }

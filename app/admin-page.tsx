@@ -3,14 +3,20 @@
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
+  BadgeDollarSign,
+  Boxes,
   Check,
   Eye,
   EyeOff,
   LogIn,
   LogOut,
+  Paintbrush,
   Plus,
+  RotateCcw,
   Save,
+  Search,
   Settings2,
+  Shapes,
   Trash2,
 } from 'lucide-react';
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
@@ -48,12 +54,18 @@ export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [draft, setDraft] = useState<SalonCatalog>(() => structuredClone(DEFAULT_CATALOG));
+  const [savedCatalog, setSavedCatalog] = useState<SalonCatalog>(() => structuredClone(DEFAULT_CATALOG));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [decorationSearch, setDecorationSearch] = useState('');
 
   const userEmail = user?.email ?? '';
   const isAdmin = ADMIN_EMAILS.has(userEmail.toLowerCase());
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(savedCatalog);
+  const activeServices = draft.techniques.filter((item) => item.active).length;
+  const activeDesigns = draft.decorations.filter((item) => item.active).length;
+  const filteredDecorations = draft.decorations.filter((item) => item.name.toLowerCase().includes(decorationSearch.toLowerCase()));
 
   useEffect(() => onAuthStateChanged(auth, (currentUser) => {
     setUser(currentUser);
@@ -61,9 +73,20 @@ export default function AdminPage() {
   }), []);
 
   useEffect(() => onSnapshot(doc(db, 'catalog', 'main'), (snapshot) => {
-    setDraft(normalizeCatalog(snapshot.exists() ? snapshot.data() : DEFAULT_CATALOG));
+    const nextCatalog = normalizeCatalog(snapshot.exists() ? snapshot.data() : DEFAULT_CATALOG);
+    setDraft(nextCatalog);
+    setSavedCatalog(structuredClone(nextCatalog));
     setLoading(false);
   }, () => setLoading(false)), []);
+
+  useEffect(() => {
+    const warnUnsaved = (event: BeforeUnloadEvent) => {
+      if (!isDirty) return;
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warnUnsaved);
+    return () => window.removeEventListener('beforeunload', warnUnsaved);
+  }, [isDirty]);
 
   const login = async () => {
     setMessage('');
@@ -128,6 +151,7 @@ export default function AdminPage() {
         updatedAt: serverTimestamp(),
         updatedBy: userEmail,
       });
+      setSavedCatalog(structuredClone(draft));
       setMessage('Cambios publicados. La página de reservas ya está actualizada.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se pudieron guardar los cambios.');
@@ -164,18 +188,41 @@ export default function AdminPage() {
           <button type="button" className="admin-back" onClick={() => { window.location.hash = ''; }}><ArrowLeft /> Reservas</button>
           <p className="eyebrow">Valentina Nails / Priscila</p>
           <h1>Catálogo y precios</h1>
-          <p>Lo que publiques aquí se refleja automáticamente para todas las clientas.</p>
+          <p>Controla servicios, precios y horarios desde un solo lugar.</p>
         </div>
         <div className="admin-actions">
           <span>{userEmail}</span>
           <button type="button" onClick={logout}><LogOut /> Salir</button>
-          <Button className="gold-button" onClick={save} disabled={saving}><Save /> {saving ? 'Publicando…' : 'Publicar cambios'}</Button>
+          <Button className="gold-button" onClick={save} disabled={saving || !isDirty}><Save /> {saving ? 'Publicando…' : isDirty ? 'Publicar cambios' : 'Todo guardado'}</Button>
         </div>
       </header>
 
       {message && <div className={`admin-toast ${message.startsWith('Cambios') ? 'success' : ''}`}><Check /> {message}</div>}
 
-      <section className="admin-card admin-business">
+      <section className="admin-overview" aria-label="Resumen del catálogo">
+        <div><span><Boxes /></span><p>Servicios activos<strong>{activeServices}</strong></p></div>
+        <div><span><Paintbrush /></span><p>Diseños visibles<strong>{activeDesigns}</strong></p></div>
+        <div><span><Shapes /></span><p>Formas disponibles<strong>{draft.shapes.filter((item) => item.active).length}</strong></p></div>
+        <div><span><BadgeDollarSign /></span><p>Estado del panel<strong className={isDirty ? 'pending' : 'saved'}>{isDirty ? 'Sin publicar' : 'Actualizado'}</strong></p></div>
+      </section>
+
+      <div className="admin-workspace">
+        <aside className="admin-sidebar">
+          <p>Configuración</p>
+          <nav aria-label="Secciones del panel">
+            <a href="#admin-business"><span>01</span> Negocio y agenda</a>
+            <a href="#admin-techniques"><span>02</span> Técnicas</a>
+            <a href="#admin-lengths"><span>03</span> Largos</a>
+            <a href="#admin-shapes"><span>04</span> Formas</a>
+            <a href="#admin-decorations"><span>05</span> Decoraciones</a>
+            <a href="#admin-extras"><span>06</span> Extras</a>
+          </nav>
+          <div className="admin-sidebar-note"><Check /><p><strong>Cambios en vivo</strong>Al publicar, las clientas ven los nuevos precios sin recargar.</p></div>
+        </aside>
+
+        <div className="admin-content">
+
+      <section id="admin-business" className="admin-card admin-business">
         <div className="admin-section-title"><div><span>01</span><div><h2>Negocio y agenda</h2><p>Datos generales que usan la reserva y WhatsApp.</p></div></div></div>
         <div className="admin-fields-grid">
           <label htmlFor="business-name"><span>Nombre del negocio</span><Input id="business-name" value={draft.businessName} onChange={(event) => setDraft((current) => ({ ...current, businessName: event.target.value }))} /></label>
@@ -186,6 +233,7 @@ export default function AdminPage() {
       </section>
 
       <AdminListSection<TechniqueItem>
+        id="admin-techniques"
         number="02" title="Técnicas" description="Servicios base. Activa “usa largos” cuando el precio dependa del largo."
         items={draft.techniques} onAdd={addTechnique} addLabel="Agregar técnica"
         render={(item) => <>
@@ -199,6 +247,7 @@ export default function AdminPage() {
       />
 
       <AdminListSection<CatalogItem>
+        id="admin-lengths"
         number="03" title="Largos" description="Precios para las técnicas que dependen del largo."
         items={draft.lengths} onAdd={addLength} addLabel="Agregar largo"
         render={(item) => <><Input value={item.name} aria-label="Nombre" onChange={(event) => updateItem('lengths', item.id, { name: event.target.value })} /><MoneyInput label="Precio" value={item.price} onChange={(price) => updateItem('lengths', item.id, { price })} /></>}
@@ -207,6 +256,7 @@ export default function AdminPage() {
       />
 
       <AdminListSection<ShapeItem>
+        id="admin-shapes"
         number="04" title="Formas" description="Opciones de forma visibles en el configurador."
         items={draft.shapes} onAdd={addShape} addLabel="Agregar forma"
         render={(item) => <><span className={`admin-nail nail-shape ${item.className}`} /><Input value={item.name} aria-label="Nombre" onChange={(event) => updateItem('shapes', item.id, { name: event.target.value })} /></>}
@@ -215,14 +265,16 @@ export default function AdminPage() {
       />
 
       <AdminListSection<DecorationItem>
+        id="admin-decorations"
         number="05" title="Decoraciones" description="Diseños cobrados por uña. Puedes agregar todos los que necesites."
-        items={draft.decorations} onAdd={addDecoration} addLabel="Agregar decoración"
+        items={filteredDecorations} onAdd={addDecoration} addLabel="Agregar decoración"
+        toolbar={<label className="admin-search"><Search /><input value={decorationSearch} onChange={(event) => setDecorationSearch(event.target.value)} placeholder="Buscar decoración…" aria-label="Buscar decoración" /></label>}
         render={(item) => <><Input className="admin-icon-input" value={item.icon} aria-label="Ícono" maxLength={3} onChange={(event) => updateItem('decorations', item.id, { icon: event.target.value })} /><Input value={item.name} aria-label="Nombre" onChange={(event) => updateItem('decorations', item.id, { name: event.target.value })} /><MoneyInput label="Por uña" value={item.price} onChange={(price) => updateItem('decorations', item.id, { price })} /></>}
         onToggle={(item) => updateItem('decorations', item.id, { active: !item.active })}
         onDelete={(item) => removeItem('decorations', item.id)}
       />
 
-      <section className="admin-card">
+      <section id="admin-extras" className="admin-card">
         <div className="admin-section-title"><div><span>06</span><div><h2>Extras</h2><p>Ajusta todos los cargos adicionales.</p></div></div></div>
         <div className="admin-price-grid">
           {([
@@ -231,15 +283,18 @@ export default function AdminPage() {
           ] as const).map(([key, label]) => <MoneyInput key={key} label={label} value={draft.extras[key]} onChange={(value) => setDraft((current) => ({ ...current, extras: { ...current.extras, [key]: value } }))} />)}
         </div>
       </section>
+        </div>
+      </div>
 
-      <div className="admin-sticky-save"><p>¿Terminaste de editar?</p><Button className="gold-button" onClick={save} disabled={saving}><Save /> {saving ? 'Publicando…' : 'Publicar cambios'}</Button></div>
+      <div className={`admin-sticky-save ${isDirty ? 'visible' : ''}`}><p><span /> Tienes cambios sin publicar</p><button type="button" onClick={() => { setDraft(structuredClone(savedCatalog)); setMessage(''); }}><RotateCcw /> Descartar</button><Button className="gold-button" onClick={save} disabled={saving}><Save /> {saving ? 'Publicando…' : 'Publicar cambios'}</Button></div>
     </main>
   );
 }
 
 function AdminListSection<T extends { id: string; active: boolean }>({
-  number, title, description, items, onAdd, addLabel, render, onToggle, onDelete,
+  id, number, title, description, items, onAdd, addLabel, render, onToggle, onDelete, toolbar,
 }: {
+  id: string;
   number: string;
   title: string;
   description: string;
@@ -249,13 +304,15 @@ function AdminListSection<T extends { id: string; active: boolean }>({
   render: (item: T) => React.ReactNode;
   onToggle: (item: T) => void;
   onDelete: (item: T) => void;
+  toolbar?: React.ReactNode;
 }) {
   return (
-    <section className="admin-card">
+    <section id={id} className="admin-card">
       <div className="admin-section-title">
         <div><span>{number}</span><div><h2>{title}</h2><p>{description}</p></div></div>
         <Button variant="outline" onClick={onAdd}><Plus /> {addLabel}</Button>
       </div>
+      {toolbar}
       <div className="admin-list">
         {items.map((item) => (
           <div className={`admin-row ${item.active ? '' : 'inactive'}`} key={item.id}>
@@ -266,6 +323,7 @@ function AdminListSection<T extends { id: string; active: boolean }>({
             </div>
           </div>
         ))}
+        {!items.length && <div className="admin-empty">No hay resultados para esta búsqueda.</div>}
       </div>
     </section>
   );
