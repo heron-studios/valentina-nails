@@ -3,7 +3,7 @@ const { defineSecret } = require('firebase-functions/params');
 
 const GROQ_API_KEY = defineSecret('GROQ_API_KEY');
 const allowedOrigins = [
-  'https://pnp-edu.github.io',
+  'https://heron-studios.github.io',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
 ];
