@@ -420,7 +420,6 @@ export default function Home() {
             <span className="brand-mark" aria-hidden="true">V</span>
             <span className="brand-text">
               <strong>{catalog.businessName}</strong>
-              <small>Atelier by Priscila</small>
             </span>
           </a>
           <div className="hidden items-center gap-7 md:flex">
