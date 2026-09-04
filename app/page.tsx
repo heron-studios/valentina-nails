@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
-  Bot,
   CalendarDays,
   Check,
   ChevronLeft,
@@ -17,7 +16,6 @@ import {
   Paintbrush,
   Plus,
   RotateCcw,
-  Send,
   ShieldCheck,
   Sparkles,
   Star,
@@ -38,6 +36,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ShaderBackdrop } from '@/components/shader-backdrop';
+import { ChatAssistant } from '@/components/chat-assistant';
 import { auth, db } from '@/lib/firebase';
 import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/catalog';
 import type { DesignExample } from '@/lib/designs';
@@ -73,73 +72,6 @@ function Counter({ value, onChange, label, max = 10 }: { value: number; onChange
       <button type="button" aria-label={`Agregar ${label}`} onClick={() => onChange(Math.min(max, value + 1))} disabled={value === max}>
         <Plus />
       </button>
-    </div>
-  );
-}
-
-type ChatMessage = { role: 'user' | 'assistant'; content: string };
-
-function ChatAssistant({ summary, total }: { summary: string[]; total: number }) {
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: '¡Hola! Soy tu asistente de Valentina Nails. Puedo orientarte con técnicas, diseños, precios y reservas.' },
-  ]);
-  const chatApiUrl = import.meta.env.VITE_CHAT_API_URL as string | undefined;
-
-  const localAnswer = (question: string) => {
-    const normalized = question.toLowerCase();
-    if (normalized.includes('precio') || normalized.includes('cuánto')) return `Tu selección actual está estimada en ${formatMoney(total)}. El total cambia automáticamente cuando agregas o quitas opciones.`;
-    if (normalized.includes('cita') || normalized.includes('reserv')) return 'Diseña tu set o elige una foto de la galería, toca “Elegir fecha”, completa tus datos y selecciona un horario disponible.';
-    if (normalized.includes('gel') || normalized.includes('acrílico') || normalized.includes('rubber')) return 'El acrílico permite construir largo y estructura; el gel semipermanente aporta color duradero; y el rubber gel refuerza la uña natural con flexibilidad.';
-    return 'Puedo ayudarte a elegir técnica, entender los extras o completar tu reserva. Cuéntame qué estilo, largo o acabado buscas.';
-  };
-
-  const send = async (preset?: string) => {
-    const question = (preset ?? text).trim();
-    if (!question || sending) return;
-    const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: question }];
-    setMessages(nextMessages);
-    setText('');
-    setSending(true);
-    try {
-      if (!chatApiUrl) {
-        await new Promise((resolve) => window.setTimeout(resolve, 350));
-        setMessages((current) => [...current, { role: 'assistant', content: localAnswer(question) }]);
-        return;
-      }
-      const response = await fetch(chatApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: nextMessages.slice(-10), context: { selection: summary, estimatedPrice: total } }),
-      });
-      if (!response.ok) throw new Error('El asistente no está disponible en este momento.');
-      const data = await response.json() as { answer?: string };
-      setMessages((current) => [...current, { role: 'assistant', content: data.answer || localAnswer(question) }]);
-    } catch {
-      setMessages((current) => [...current, { role: 'assistant', content: `${localAnswer(question)} Si necesitas una recomendación más específica, escríbenos por WhatsApp.` }]);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <div className={`chat-assistant ${open ? 'open' : ''}`}>
-      {open && (
-        <section className="chat-panel" aria-label="Asistente de Valentina Nails">
-          <header><span><Bot /></span><div><strong>Asistente Valentina</strong><small><i /> Lista para ayudarte</small></div><button type="button" onClick={() => setOpen(false)} aria-label="Cerrar chat"><X /></button></header>
-          <div className="chat-messages" aria-live="polite">
-            {messages.map((message, index) => <p key={`${message.role}-${index}`} className={message.role}>{message.content}</p>)}
-            {sending && <p className="assistant typing">Pensando…</p>}
-          </div>
-          {messages.length === 1 && <div className="chat-prompts">
-            {['¿Qué técnica me conviene?', '¿Cómo reservo?', '¿Cuál es mi precio?'].map((prompt) => <button type="button" key={prompt} onClick={() => void send(prompt)}>{prompt}</button>)}
-          </div>}
-          <form onSubmit={(event) => { event.preventDefault(); void send(); }}><input value={text} onChange={(event) => setText(event.target.value)} maxLength={600} placeholder="Escribe tu pregunta…" aria-label="Mensaje para el asistente" /><button type="submit" disabled={!text.trim() || sending} aria-label="Enviar mensaje"><Send /></button></form>
-        </section>
-      )}
-      <button className="chat-launcher" type="button" onClick={() => setOpen((value) => !value)} aria-label={open ? 'Cerrar asistente' : 'Abrir asistente'}><Bot /><span>{open ? 'Cerrar' : '¿Te ayudo?'}</span></button>
     </div>
   );
 }
@@ -688,7 +620,19 @@ export default function Home() {
         </div>
       )}
 
-      <ChatAssistant summary={summary} total={total} />
+      <ChatAssistant
+        catalog={catalog}
+        summary={summary}
+        total={total}
+        onNavigateToBooking={goToBooking}
+        onNavigateToGallery={() => {
+          galleryRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onNavigateToCalculator={() => {
+          document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onStartTour={() => setWizardStep(0)}
+      />
 
       <button className="guide-reopen" type="button" onClick={() => setWizardStep(0)} aria-label="Abrir guía de uso">
         <HelpCircle /><span>Recorrido guiado</span>

@@ -22,6 +22,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "app/**/*.tsx",
+    "components/chat-assistant.tsx",
     "components/shader-backdrop.tsx",
     "components/ui/button.tsx",
     "components/ui/calendar.tsx",
