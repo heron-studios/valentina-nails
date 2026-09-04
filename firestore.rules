@@ -18,6 +18,22 @@ service cloud.firestore {
       allow create, update, delete: if isOwner();
     }
 
+    match /designs/{designId} {
+      allow read: if true;
+      allow create, update: if isOwner()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 2
+        && request.resource.data.title.size() <= 100
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 600
+        && request.resource.data.price is int
+        && request.resource.data.price > 0
+        && request.resource.data.imageData is string
+        && request.resource.data.imageData.size() <= 900000
+        && request.resource.data.active is bool;
+      allow delete: if isOwner();
+    }
+
     match /slots/{slotId} {
       allow read: if true;
       allow create: if signedIn()

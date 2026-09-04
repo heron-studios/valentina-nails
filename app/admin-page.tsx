@@ -8,6 +8,7 @@ import {
   Check,
   Eye,
   EyeOff,
+  ImagePlus,
   LogIn,
   LogOut,
   Paintbrush,
@@ -20,10 +21,13 @@ import {
   Trash2,
 } from 'lucide-react';
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
-import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { auth, db, googleProvider } from '@/lib/firebase';
+import { imageFileToDataUrl, type DesignExample } from '@/lib/designs';
 import {
   DEFAULT_CATALOG,
   makeCatalogId,
@@ -59,6 +63,9 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [decorationSearch, setDecorationSearch] = useState('');
+  const [designs, setDesigns] = useState<DesignExample[]>([]);
+  const [galleryBusy, setGalleryBusy] = useState(false);
+  const [newDesign, setNewDesign] = useState({ title: '', description: '', price: 0, imageData: '' });
 
   const userEmail = user?.email ?? '';
   const isAdmin = ADMIN_EMAILS.has(userEmail.toLowerCase());
@@ -78,6 +85,10 @@ export default function AdminPage() {
     setSavedCatalog(structuredClone(nextCatalog));
     setLoading(false);
   }, () => setLoading(false)), []);
+
+  useEffect(() => onSnapshot(collection(db, 'designs'), (snapshot) => {
+    setDesigns(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DesignExample)));
+  }, () => setMessage('No pudimos cargar la galería de diseños.')), []);
 
   useEffect(() => {
     const warnUnsaved = (event: BeforeUnloadEvent) => {
@@ -160,6 +171,63 @@ export default function AdminPage() {
     }
   };
 
+  const addDesign = async () => {
+    if (!newDesign.title.trim() || !newDesign.imageData || newDesign.price <= 0) {
+      setMessage('Agrega una foto, un nombre y un precio para publicar el diseño.');
+      return;
+    }
+    setGalleryBusy(true);
+    setMessage('');
+    try {
+      await addDoc(collection(db, 'designs'), {
+        ...newDesign,
+        title: newDesign.title.trim(),
+        description: newDesign.description.trim(),
+        active: true,
+        createdAt: serverTimestamp(),
+        updatedBy: userEmail,
+      });
+      setNewDesign({ title: '', description: '', price: 0, imageData: '' });
+      setMessage('Diseño agregado a la galería de clientas.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No pudimos agregar el diseño.');
+    } finally {
+      setGalleryBusy(false);
+    }
+  };
+
+  const patchDesign = (id: string, patch: Partial<DesignExample>) => {
+    setDesigns((current) => current.map((item) => item.id === id ? { ...item, ...patch } : item));
+  };
+
+  const saveDesign = async (design: DesignExample) => {
+    setGalleryBusy(true);
+    try {
+      await updateDoc(doc(db, 'designs', design.id), {
+        title: design.title.trim(), description: design.description.trim(), price: design.price,
+        imageData: design.imageData, active: design.active, updatedAt: serverTimestamp(), updatedBy: userEmail,
+      });
+      setMessage('Diseño actualizado.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No pudimos actualizar el diseño.');
+    } finally {
+      setGalleryBusy(false);
+    }
+  };
+
+  const removeDesign = async (design: DesignExample) => {
+    if (!window.confirm(`¿Eliminar “${design.title}” de la galería?`)) return;
+    setGalleryBusy(true);
+    try {
+      await deleteDoc(doc(db, 'designs', design.id));
+      setMessage('Diseño eliminado de la galería.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No pudimos eliminar el diseño.');
+    } finally {
+      setGalleryBusy(false);
+    }
+  };
+
   if (!authReady || loading) {
     return <main className="admin-loading"><span className="brand-mark"><span>V</span></span><p>Preparando el panel…</p></main>;
   }
@@ -206,24 +274,17 @@ export default function AdminPage() {
         <div><span><BadgeDollarSign /></span><p>Estado del panel<strong className={isDirty ? 'pending' : 'saved'}>{isDirty ? 'Sin publicar' : 'Actualizado'}</strong></p></div>
       </section>
 
-      <div className="admin-workspace">
-        <aside className="admin-sidebar">
-          <p>Configuración</p>
-          <nav aria-label="Secciones del panel">
-            <a href="#admin-business"><span>01</span> Negocio y agenda</a>
-            <a href="#admin-techniques"><span>02</span> Técnicas</a>
-            <a href="#admin-lengths"><span>03</span> Largos</a>
-            <a href="#admin-shapes"><span>04</span> Formas</a>
-            <a href="#admin-decorations"><span>05</span> Decoraciones</a>
-            <a href="#admin-extras"><span>06</span> Extras</a>
-          </nav>
-          <div className="admin-sidebar-note"><Check /><p><strong>Cambios en vivo</strong>Al publicar, las clientas ven los nuevos precios sin recargar.</p></div>
-        </aside>
+      <Tabs defaultValue="general" className="admin-tabs">
+        <TabsList className="admin-tabs-list" aria-label="Áreas del panel">
+          <TabsTrigger value="general"><Settings2 /> Información</TabsTrigger>
+          <TabsTrigger value="services"><Boxes /> Servicios</TabsTrigger>
+          <TabsTrigger value="prices"><BadgeDollarSign /> Precios y extras</TabsTrigger>
+          <TabsTrigger value="gallery"><ImagePlus /> Galería</TabsTrigger>
+        </TabsList>
 
-        <div className="admin-content">
-
+        <TabsContent value="general">
       <section id="admin-business" className="admin-card admin-business">
-        <div className="admin-section-title"><div><span>01</span><div><h2>Negocio y agenda</h2><p>Datos generales que usan la reserva y WhatsApp.</p></div></div></div>
+        <div className="admin-section-title"><div><span>01</span><div><h2>Información y agenda</h2><p>Configura el nombre, WhatsApp y los horarios disponibles.</p></div></div></div>
         <div className="admin-fields-grid">
           <label htmlFor="business-name"><span>Nombre del negocio</span><Input id="business-name" value={draft.businessName} onChange={(event) => setDraft((current) => ({ ...current, businessName: event.target.value }))} /></label>
           <label htmlFor="business-whatsapp"><span>WhatsApp con código de país</span><Input id="business-whatsapp" inputMode="numeric" value={draft.whatsapp} onChange={(event) => setDraft((current) => ({ ...current, whatsapp: event.target.value.replace(/\D/g, '') }))} /></label>
@@ -231,7 +292,9 @@ export default function AdminPage() {
           <label htmlFor="saturday-hours"><span>Horarios sábado</span><Input id="saturday-hours" value={draft.schedule.saturday.join(', ')} onChange={(event) => setDraft((current) => ({ ...current, schedule: { ...current.schedule, saturday: event.target.value.split(',').map((time) => time.trim()).filter(Boolean) } }))} /></label>
         </div>
       </section>
+        </TabsContent>
 
+        <TabsContent value="services">
       <AdminListSection<TechniqueItem>
         id="admin-techniques"
         number="02" title="Técnicas" description="Servicios base. Activa “usa largos” cuando el precio dependa del largo."
@@ -263,7 +326,9 @@ export default function AdminPage() {
         onToggle={(item) => updateItem('shapes', item.id, { active: !item.active })}
         onDelete={(item) => removeItem('shapes', item.id)}
       />
+        </TabsContent>
 
+        <TabsContent value="prices">
       <AdminListSection<DecorationItem>
         id="admin-decorations"
         number="05" title="Decoraciones" description="Diseños cobrados por uña. Puedes agregar todos los que necesites."
@@ -283,8 +348,22 @@ export default function AdminPage() {
           ] as const).map(([key, label]) => <MoneyInput key={key} label={label} value={draft.extras[key]} onChange={(value) => setDraft((current) => ({ ...current, extras: { ...current.extras, [key]: value } }))} />)}
         </div>
       </section>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="gallery">
+          <DesignGalleryAdmin
+            designs={designs}
+            draft={newDesign}
+            busy={galleryBusy}
+            onDraft={setNewDesign}
+            onAdd={addDesign}
+            onPatch={patchDesign}
+            onSave={saveDesign}
+            onDelete={removeDesign}
+            onMessage={setMessage}
+          />
+        </TabsContent>
+      </Tabs>
 
       <div className={`admin-sticky-save ${isDirty ? 'visible' : ''}`}><p><span /> Tienes cambios sin publicar</p><button type="button" onClick={() => { setDraft(structuredClone(savedCatalog)); setMessage(''); }}><RotateCcw /> Descartar</button><Button className="gold-button" onClick={save} disabled={saving}><Save /> {saving ? 'Publicando…' : 'Publicar cambios'}</Button></div>
     </main>
@@ -324,6 +403,75 @@ function AdminListSection<T extends { id: string; active: boolean }>({
           </div>
         ))}
         {!items.length && <div className="admin-empty">No hay resultados para esta búsqueda.</div>}
+      </div>
+    </section>
+  );
+}
+
+function DesignGalleryAdmin({
+  designs, draft, busy, onDraft, onAdd, onPatch, onSave, onDelete, onMessage,
+}: {
+  designs: DesignExample[];
+  draft: Omit<DesignExample, 'id' | 'active'>;
+  busy: boolean;
+  onDraft: React.Dispatch<React.SetStateAction<Omit<DesignExample, 'id' | 'active'>>>;
+  onAdd: () => void;
+  onPatch: (id: string, patch: Partial<DesignExample>) => void;
+  onSave: (design: DesignExample) => void;
+  onDelete: (design: DesignExample) => void;
+  onMessage: (message: string) => void;
+}) {
+  const readImage = async (file: File | undefined, apply: (imageData: string) => void) => {
+    if (!file) return;
+    try {
+      apply(await imageFileToDataUrl(file));
+      onMessage('Foto preparada. Completa los datos y guarda el diseño.');
+    } catch (error) {
+      onMessage(error instanceof Error ? error.message : 'No pudimos procesar la imagen.');
+    }
+  };
+
+  return (
+    <section className="admin-card gallery-manager">
+      <div className="admin-section-title">
+        <div><span>04</span><div><h2>Galería “elige y replica”</h2><p>Sube trabajos terminados para que las clientas puedan reservar ese diseño directamente.</p></div></div>
+      </div>
+
+      <div className="gallery-create">
+        <label className={`gallery-dropzone ${draft.imageData ? 'has-image' : ''}`}>
+          {draft.imageData ? <img src={draft.imageData} alt="Vista previa del nuevo diseño" /> : <><ImagePlus /><strong>Seleccionar foto</strong><span>JPG, PNG o WEBP · máximo 12 MB</span></>}
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => readImage(event.target.files?.[0], (imageData) => onDraft((current) => ({ ...current, imageData })))} />
+        </label>
+        <div className="gallery-create-fields">
+          <label htmlFor="new-design-title"><span>Nombre del diseño</span><Input id="new-design-title" value={draft.title} onChange={(event) => onDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Ej. French rosa con cristales" /></label>
+          <label htmlFor="new-design-description"><span>Descripción breve</span><Textarea id="new-design-description" value={draft.description} onChange={(event) => onDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Técnica, largo y detalles incluidos…" /></label>
+          <MoneyInput label="Precio completo" value={draft.price} onChange={(price) => onDraft((current) => ({ ...current, price }))} />
+          <Button className="gold-button" onClick={onAdd} disabled={busy}><Plus /> {busy ? 'Guardando…' : 'Publicar en galería'}</Button>
+        </div>
+      </div>
+
+      <div className="gallery-admin-list">
+        <div className="gallery-list-heading"><h3>Diseños publicados</h3><span>{designs.length} en total</span></div>
+        {!designs.length && <div className="admin-empty">Todavía no hay fotografías. Agrega la primera arriba.</div>}
+        {designs.map((design) => (
+          <article className={`gallery-admin-card ${design.active ? '' : 'inactive'}`} key={design.id}>
+            <label className="gallery-admin-photo">
+              <img src={design.imageData} alt={design.title} />
+              <span><ImagePlus /> Cambiar</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => readImage(event.target.files?.[0], (imageData) => onPatch(design.id, { imageData }))} />
+            </label>
+            <div className="gallery-admin-fields">
+              <Input value={design.title} aria-label="Nombre del diseño" onChange={(event) => onPatch(design.id, { title: event.target.value })} />
+              <Textarea value={design.description} aria-label="Descripción del diseño" onChange={(event) => onPatch(design.id, { description: event.target.value })} />
+              <MoneyInput label="Precio completo" value={design.price} onChange={(price) => onPatch(design.id, { price })} />
+            </div>
+            <div className="gallery-admin-actions">
+              <button type="button" onClick={() => onPatch(design.id, { active: !design.active })}>{design.active ? <><Eye /> Visible</> : <><EyeOff /> Oculto</>}</button>
+              <Button variant="outline" onClick={() => onSave(design)} disabled={busy}><Save /> Guardar</Button>
+              <button type="button" className="danger" onClick={() => onDelete(design)} disabled={busy}><Trash2 /> Eliminar</button>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );

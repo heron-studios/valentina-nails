@@ -9,7 +9,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint": "oxlint app/page.tsx app/admin-page.tsx components/shader-backdrop.tsx components/ui/button.tsx components/ui/calendar.tsx components/ui/input.tsx lib/catalog.ts lib/firebase.ts lib/utils.ts src/main.tsx vite.config.ts",
+    "lint": "oxlint app/page.tsx app/admin-page.tsx components/shader-backdrop.tsx components/ui/button.tsx components/ui/calendar.tsx components/ui/input.tsx lib/catalog.ts lib/designs.ts lib/firebase.ts lib/utils.ts src/main.tsx vite.config.ts",
     "format": "oxfmt"
   },
   "dependencies": {

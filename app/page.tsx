@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
+  Bot,
   CalendarDays,
   Check,
+  ChevronLeft,
   ChevronRight,
   Clock3,
   Gem,
@@ -15,6 +17,7 @@ import {
   Paintbrush,
   Plus,
   RotateCcw,
+  Send,
   ShieldCheck,
   Sparkles,
   Star,
@@ -40,6 +43,7 @@ import { Input } from '@/components/ui/input';
 import { ShaderBackdrop } from '@/components/shader-backdrop';
 import { auth, db } from '@/lib/firebase';
 import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/catalog';
+import type { DesignExample } from '@/lib/designs';
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(value);
@@ -76,6 +80,73 @@ function Counter({ value, onChange, label, max = 10 }: { value: number; onChange
   );
 }
 
+type ChatMessage = { role: 'user' | 'assistant'; content: string };
+
+function ChatAssistant({ summary, total }: { summary: string[]; total: number }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: 'assistant', content: '¡Hola! Soy tu asistente de Valentina Nails. Puedo orientarte con técnicas, diseños, precios y reservas.' },
+  ]);
+  const chatApiUrl = import.meta.env.VITE_CHAT_API_URL as string | undefined;
+
+  const localAnswer = (question: string) => {
+    const normalized = question.toLowerCase();
+    if (normalized.includes('precio') || normalized.includes('cuánto')) return `Tu selección actual está estimada en ${formatMoney(total)}. El total cambia automáticamente cuando agregas o quitas opciones.`;
+    if (normalized.includes('cita') || normalized.includes('reserv')) return 'Diseña tu set o elige una foto de la galería, toca “Elegir fecha”, completa tus datos y selecciona un horario disponible.';
+    if (normalized.includes('gel') || normalized.includes('acrílico') || normalized.includes('rubber')) return 'El acrílico permite construir largo y estructura; el gel semipermanente aporta color duradero; y el rubber gel refuerza la uña natural con flexibilidad.';
+    return 'Puedo ayudarte a elegir técnica, entender los extras o completar tu reserva. Cuéntame qué estilo, largo o acabado buscas.';
+  };
+
+  const send = async (preset?: string) => {
+    const question = (preset ?? text).trim();
+    if (!question || sending) return;
+    const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: question }];
+    setMessages(nextMessages);
+    setText('');
+    setSending(true);
+    try {
+      if (!chatApiUrl) {
+        await new Promise((resolve) => window.setTimeout(resolve, 350));
+        setMessages((current) => [...current, { role: 'assistant', content: localAnswer(question) }]);
+        return;
+      }
+      const response = await fetch(chatApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: nextMessages.slice(-10), context: { selection: summary, estimatedPrice: total } }),
+      });
+      if (!response.ok) throw new Error('El asistente no está disponible en este momento.');
+      const data = await response.json() as { answer?: string };
+      setMessages((current) => [...current, { role: 'assistant', content: data.answer || localAnswer(question) }]);
+    } catch {
+      setMessages((current) => [...current, { role: 'assistant', content: `${localAnswer(question)} Si necesitas una recomendación más específica, escríbenos por WhatsApp.` }]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className={`chat-assistant ${open ? 'open' : ''}`}>
+      {open && (
+        <section className="chat-panel" aria-label="Asistente de Valentina Nails">
+          <header><span><Bot /></span><div><strong>Asistente Valentina</strong><small><i /> Lista para ayudarte</small></div><button type="button" onClick={() => setOpen(false)} aria-label="Cerrar chat"><X /></button></header>
+          <div className="chat-messages" aria-live="polite">
+            {messages.map((message, index) => <p key={`${message.role}-${index}`} className={message.role}>{message.content}</p>)}
+            {sending && <p className="assistant typing">Pensando…</p>}
+          </div>
+          {messages.length === 1 && <div className="chat-prompts">
+            {['¿Qué técnica me conviene?', '¿Cómo reservo?', '¿Cuál es mi precio?'].map((prompt) => <button type="button" key={prompt} onClick={() => void send(prompt)}>{prompt}</button>)}
+          </div>}
+          <form onSubmit={(event) => { event.preventDefault(); void send(); }}><input value={text} onChange={(event) => setText(event.target.value)} maxLength={600} placeholder="Escribe tu pregunta…" aria-label="Mensaje para el asistente" /><button type="submit" disabled={!text.trim() || sending} aria-label="Enviar mensaje"><Send /></button></form>
+        </section>
+      )}
+      <button className="chat-launcher" type="button" onClick={() => setOpen((value) => !value)} aria-label={open ? 'Cerrar asistente' : 'Abrir asistente'}><Bot /><span>{open ? 'Cerrar' : '¿Te ayudo?'}</span></button>
+    </div>
+  );
+}
+
 export default function Home() {
   const [catalog, setCatalog] = useState<SalonCatalog>(() => structuredClone(DEFAULT_CATALOG));
   const [catalogLoading, setCatalogLoading] = useState(true);
@@ -103,6 +174,9 @@ export default function Home() {
   const [wizardStep, setWizardStep] = useState<number | null>(null);
   const [tourTarget, setTourTarget] = useState({ top: 0, left: 0, width: 0, height: 0 });
   const [tourCard, setTourCard] = useState({ top: 16, left: 16, width: 360, placement: 'below' as 'above' | 'below' });
+  const [designExamples, setDesignExamples] = useState<DesignExample[]>([]);
+  const [selectedDesign, setSelectedDesign] = useState<DesignExample | null>(null);
+  const galleryRef = useRef<HTMLDivElement>(null);
 
   const techniques = catalog.techniques.filter((item) => item.active);
   const lengths = catalog.lengths.filter((item) => item.active);
@@ -116,7 +190,7 @@ export default function Home() {
     ...techniques.map((item) => item.usesLengths && lengths.length ? Math.min(...lengths.map((option) => option.price)) : item.price),
   );
 
-  const total = useMemo(() => {
+  const customTotal = useMemo(() => {
     const base = techniqueInfo.usesLengths ? lengthInfo.price : techniqueInfo.price;
     const decorationTotal = decorationOptions.reduce(
       (sum, item) => sum + (decorations[item.id] || 0) * item.price,
@@ -134,8 +208,10 @@ export default function Home() {
     );
   }, [techniqueInfo, lengthInfo.price, decorationOptions, decorations, extraTones, changeShape, removal, repairs, catalog.extras]);
 
+  const total = selectedDesign?.price ?? customTotal;
+
   const selectedDecorations = decorationOptions.filter((item) => (decorations[item.id] || 0) > 0);
-  const summary = [
+  const customSummary = [
     `${techniqueInfo.name}${techniqueInfo.usesLengths ? ` · ${lengthInfo.name.toLowerCase()}` : ''}`,
     `Forma ${shapeInfo.name}`,
     ...selectedDecorations.map((item) => `${item.name} ×${decorations[item.id]} uña${decorations[item.id] > 1 ? 's' : ''}`),
@@ -146,6 +222,9 @@ export default function Home() {
     ...(repairs.acrylic ? [`Reposición acrílico ×${repairs.acrylic}`] : []),
     ...(repairs.gel ? [`Reposición gel ×${repairs.gel}`] : []),
   ];
+  const summary = selectedDesign
+    ? [`Diseño para replicar: ${selectedDesign.title}`, selectedDesign.description || 'Referencia visual seleccionada']
+    : customSummary;
 
   const day = selectedDate?.getDay();
   const times = day === 6 ? catalog.schedule.saturday : catalog.schedule.weekdays;
@@ -170,6 +249,12 @@ export default function Home() {
       setAuthReady(true);
     }
   }), []);
+
+  useEffect(() => onSnapshot(collection(db, 'designs'), (snapshot) => {
+    setDesignExamples(snapshot.docs
+      .map((item) => ({ id: item.id, ...item.data() } as DesignExample))
+      .filter((item) => item.active));
+  }, () => setDesignExamples([])), []);
 
   useEffect(() => {
     try {
@@ -257,6 +342,7 @@ export default function Home() {
     setSelectedDate(undefined);
     setSelectedTime('');
     setConfirmed(false);
+    setSelectedDesign(null);
     setError('');
     setStage('design');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -265,6 +351,12 @@ export default function Home() {
   const goToBooking = () => {
     setStage('booking');
     setTimeout(() => document.querySelector('#booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
+
+  const replicateDesign = (design: DesignExample) => {
+    setSelectedDesign(design);
+    setStage('booking');
+    setTimeout(() => document.querySelector('#booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   };
 
   const closeWizard = (startDesign = false) => {
@@ -401,6 +493,31 @@ export default function Home() {
         <div><CalendarDays /><span><strong>Agenda simple</strong>Tu horario en pocos pasos</span></div>
       </section>
 
+      {designExamples.length > 0 && (
+        <section className="inspiration-section" aria-labelledby="inspiration-title">
+          <div className="inspiration-heading">
+            <div><p className="eyebrow">Trabajos realizados</p><h2 id="inspiration-title">Elige uno y lo replicamos</h2><p>¿No quieres configurar cada detalle? Escoge una referencia, reserva y listo.</p></div>
+            <div className="carousel-controls">
+              <button type="button" aria-label="Ver diseños anteriores" onClick={() => galleryRef.current?.scrollBy({ left: -360, behavior: 'smooth' })}><ChevronLeft /></button>
+              <button type="button" aria-label="Ver más diseños" onClick={() => galleryRef.current?.scrollBy({ left: 360, behavior: 'smooth' })}><ChevronRight /></button>
+            </div>
+          </div>
+          <div className="design-carousel" ref={galleryRef}>
+            {designExamples.map((design) => (
+              <article className="design-example" key={design.id}>
+                <div className="design-example-photo"><img src={design.imageData} alt={design.title} loading="lazy" /></div>
+                <div className="design-example-copy">
+                  <span>Diseño listo · {formatMoney(design.price)}</span>
+                  <h3>{design.title}</h3>
+                  <p>{design.description}</p>
+                  <Button onClick={() => replicateDesign(design)}>Quiero replicar este diseño <ArrowRight /></Button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section id="calculadora" className="builder-section">
         <div className="section-heading" data-tour="intro">
           <p className="eyebrow">Tu set, a tu manera</p>
@@ -494,7 +611,7 @@ export default function Home() {
 
       {stage === 'booking' && (
         <section id="booking" className="booking-section">
-          <div className="booking-header"><div><p className="eyebrow">Tu momento</p><h2>Agenda tu cita</h2><p>Elige una fecha disponible y el horario que mejor te quede.</p></div><div className="booking-total"><span>Tu set</span><strong>{formatMoney(total)}</strong></div></div>
+          <div className="booking-header"><div><p className="eyebrow">Tu momento</p><h2>Agenda tu cita</h2><p>{selectedDesign ? `Reservando “${selectedDesign.title}”. Completa tus datos y elige un horario.` : 'Elige una fecha disponible y el horario que mejor te quede.'}</p></div><div className="booking-total"><span>Tu set</span><strong>{formatMoney(total)}</strong></div></div>
           <div className="booking-grid">
             <div className="booking-form" data-tour="client-data">
               <label htmlFor="name">Nombre de la clienta</label>
@@ -502,7 +619,7 @@ export default function Home() {
               <label htmlFor="phone">Teléfono</label>
               <Input id="phone" value={clientPhone} onChange={(event) => setClientPhone(event.target.value)} placeholder="Tu número de contacto" className="booking-input" inputMode="tel" autoComplete="tel" />
               <div className="mini-summary"><span><Gem /></span><div><strong>{summary[0]}</strong><p>{summary.slice(1, 4).join(' · ')}{summary.length > 4 ? ` · +${summary.length - 4} más` : ''}</p></div></div>
-              <button type="button" className="back-link" onClick={() => { setStage('design'); document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' }); }}>← Editar mi diseño</button>
+              <button type="button" className="back-link" onClick={() => { setSelectedDesign(null); setStage('design'); document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' }); }}>← {selectedDesign ? 'Prefiero personalizarlo' : 'Editar mi diseño'}</button>
             </div>
             <div className="calendar-panel" data-tour="calendar">
               <Calendar
@@ -550,6 +667,8 @@ export default function Home() {
           <Button onClick={goToBooking}>Elegir fecha <ArrowRight /></Button>
         </div>
       )}
+
+      <ChatAssistant summary={summary} total={total} />
 
       <button className="guide-reopen" type="button" onClick={() => setWizardStep(0)} aria-label="Abrir guía de uso">
         <HelpCircle /><span>Recorrido guiado</span>
