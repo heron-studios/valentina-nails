@@ -75,7 +75,7 @@ svg { stroke-width: 1.7; }
 }
 .blush-orb { background: radial-gradient(ellipse at center, rgba(246, 206, 219, .65) 0%, rgba(246, 180, 200, .25) 60%, transparent 100%); filter: blur(72px); }
 .gold-orb { position: absolute; bottom: -6rem; left: -8rem; z-index: -10; width: 40rem; height: 40rem; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(212, 175, 101, .22) 0%, rgba(181, 137, 61, .10) 40%, transparent 70%); filter: blur(80px); pointer-events: none; }
-.shader-backdrop { position: absolute; inset: 0; z-index: -15; width: 100%; height: 100%; opacity: .96; pointer-events: none; mix-blend-mode: soft-light; }
+.shader-backdrop { position: absolute; inset: 0; z-index: -15; width: 100%; height: 100%; pointer-events: none; }
 .eyebrow { margin: 0; font-size: .69rem; font-weight: 750; letter-spacing: .22em; text-transform: uppercase; color: #96691f; }
 
 .nav-link { position: relative; color: #685c56; font-size: .8rem; font-weight: 650; text-decoration: none; }
