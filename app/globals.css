@@ -263,30 +263,28 @@ footer p { margin: 0; text-align: center; font-size: .63rem; line-height: 1.7; }
 .footer-whatsapp { display: flex; align-items: center; justify-self: end; gap: .45rem; color: #e4d9d3; font-size: .7rem; text-decoration: none; }
 .footer-whatsapp svg { width: .9rem; }
 
-/* First-visit client guide */
-body.wizard-open { overflow: hidden; }
-.wizard-overlay { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 1rem; background: rgba(37,25,22,.62); backdrop-filter: blur(14px); animation: wizard-fade .24s ease-out; }
-.client-wizard { position: relative; width: min(100%,540px); max-height: calc(100dvh - 2rem); overflow: auto; margin: 0; border: 1px solid rgba(204,168,102,.72); border-radius: 2rem; padding: clamp(1.4rem,5vw,2.4rem); color: #332925; background: linear-gradient(145deg,#fffefd 0%,#fff8f8 65%,#f8e8ed 100%); box-shadow: 0 35px 100px rgba(35,20,16,.35); animation: wizard-rise .3s cubic-bezier(.2,.8,.2,1); }
-.wizard-close { position: absolute; top: 1rem; right: 1rem; display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid #e1d2cb; border-radius: 50%; color: #71645f; background: rgba(255,255,255,.8); cursor: pointer; }
-.wizard-close svg { width: 1.05rem; }
-.wizard-progress { display: flex; gap: .4rem; width: calc(100% - 3.6rem); margin-bottom: 2rem; }
-.wizard-progress span { height: 4px; flex: 1; overflow: hidden; border-radius: 999px; background: #eadfd9; transition: background .25s ease; }
-.wizard-progress span.active { background: linear-gradient(90deg,#aa7627,#d5ac61); }
-.wizard-visual { position: relative; display: grid; width: 5rem; height: 5rem; place-items: center; margin-bottom: 1.5rem; border: 1px solid #d8b777; border-radius: 1.5rem; color: #9b671d; background: radial-gradient(circle at 35% 25%,#fff,#f5e1e7); box-shadow: 0 14px 34px rgba(107,68,37,.12); transform: rotate(-3deg); }
-.wizard-visual svg { width: 2rem; height: 2rem; }
-.wizard-visual span { position: absolute; right: -.55rem; bottom: -.55rem; display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 50%; color: #fff; background: #302622; font-size: .7rem; font-weight: 800; }
-.client-wizard h2 { max-width: 420px; margin: .5rem 0 1rem; font-family: Georgia,serif; font-size: clamp(2.25rem,7vw,3.45rem); font-weight: 500; line-height: .96; letter-spacing: -.035em; }
-.wizard-copy { margin: 0; color: #6f625c; font-size: 1rem; line-height: 1.7; }
-.wizard-tip { display: flex; align-items: flex-start; gap: .65rem; margin-top: 1.25rem; border: 1px solid #ead9c1; border-radius: 1rem; padding: .85rem; color: #6b5a42; background: rgba(255,250,238,.8); font-size: .86rem; line-height: 1.5; }
-.wizard-tip svg { width: 1rem; flex: 0 0 auto; color: #a77728; }
-.wizard-actions { display: flex; align-items: center; justify-content: space-between; gap: .8rem; margin-top: 1.6rem; }
-.wizard-actions > button:first-child { min-height: 44px; border: 0; padding: 0 .3rem; color: #7b6e68; background: transparent; font-size: .88rem; cursor: pointer; }
-.wizard-actions .gold-button, .wizard-actions > .inline-flex { min-width: 150px; min-height: 48px; border: 0; border-radius: 999px; background: linear-gradient(135deg,#b48739,#91651f); }
+/* Scene-by-scene client tour */
+.tour-spotlight { position: fixed; z-index: 80; border: 2px solid #d4a64f; border-radius: 1.35rem; box-shadow: 0 0 0 9999px rgba(34,23,20,.67),0 0 0 6px rgba(255,244,215,.22),0 18px 55px rgba(65,38,29,.28); pointer-events: none; transition: top .34s ease,left .34s ease,width .34s ease,height .34s ease; }
+.tour-card { position: fixed; z-index: 82; max-width: calc(100vw - 24px); overflow: visible; margin: 0; border: 1px solid #d6b46f; border-radius: 1.35rem; padding: 1.1rem; color: #332925; background: rgba(255,253,251,.98); box-shadow: 0 22px 70px rgba(31,19,16,.32); backdrop-filter: blur(18px); animation: tour-card-in .22s ease-out; }
+.tour-card::before { position: absolute; left: 50%; width: 15px; height: 15px; border: solid #d6b46f; background: #fffdfb; content: ''; transform: translateX(-50%) rotate(45deg); }
+.tour-card.below::before { top: -8px; border-width: 1px 0 0 1px; }
+.tour-card.above::before { bottom: -8px; border-width: 0 1px 1px 0; }
+.tour-card-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: #9a6d22; font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.tour-card-top button { display: grid; width: 2.35rem; height: 2.35rem; place-items: center; border: 1px solid #eaded8; border-radius: 50%; color: #71645f; background: #fff; cursor: pointer; }
+.tour-card-top svg { width: .95rem; }
+.tour-progress { height: 4px; overflow: hidden; margin: .65rem 0 1rem; border-radius: 999px; background: #eadfd9; }
+.tour-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#aa7627,#dfbc73); transition: width .3s ease; }
+.tour-card h2 { margin: 0 0 .55rem; font-family: Georgia,serif; font-size: 1.65rem; font-weight: 500; line-height: 1.05; }
+.tour-card > p { margin: 0; color: #6f625c; font-size: .88rem; line-height: 1.55; }
+.tour-tip { display: flex; align-items: flex-start; gap: .45rem; margin-top: .8rem; color: #8a651f; font-size: .74rem; line-height: 1.45; }
+.tour-tip svg { width: .85rem; flex: 0 0 auto; }
+.tour-actions { display: flex; align-items: center; justify-content: space-between; gap: .7rem; margin-top: 1rem; }
+.tour-actions > button:first-child { min-height: 42px; border: 0; padding: 0 .35rem; color: #7b6e68; background: transparent; font-size: .8rem; cursor: pointer; }
+.tour-actions .gold-button, .tour-actions > .inline-flex { min-height: 44px; border: 0; border-radius: 999px; background: linear-gradient(135deg,#b48739,#91651f); font-size: .72rem; }
 .guide-reopen { position: fixed; right: 1rem; bottom: 1rem; z-index: 20; display: flex; min-height: 46px; align-items: center; gap: .45rem; border: 1px solid #d8c4bb; border-radius: 999px; padding: 0 .9rem; color: #5f504a; background: rgba(255,255,255,.91); box-shadow: 0 10px 34px rgba(56,35,28,.15); backdrop-filter: blur(14px); font-size: .78rem; font-weight: 750; cursor: pointer; }
 .guide-reopen svg { width: 1rem; color: #a7782a; }
 .mobile-price-bar { display: none; }
-@keyframes wizard-fade { from { opacity: 0; } }
-@keyframes wizard-rise { from { opacity: 0; transform: translateY(18px) scale(.98); } }
+@keyframes tour-card-in { from { opacity: 0; transform: translateY(7px) scale(.98); } }
 
 /* Private catalog dashboard */
 .admin-loading, .admin-login { display: grid; min-height: 100vh; place-items: center; padding: 1.5rem; background: radial-gradient(circle at 15% 10%,#f8dfe7 0,transparent 34%),#fffaf8; }
@@ -460,13 +458,12 @@ body.wizard-open { overflow: hidden; }
   .mobile-price-bar small { color: #83756f; font-size: .65rem; }
   .mobile-price-bar strong { color: #95671e; font-family: Georgia,serif; font-size: 1.35rem; font-weight: 500; }
   .mobile-price-bar button { min-height: 50px; border: 0; border-radius: .9rem; padding: 0 .85rem; background: linear-gradient(135deg,#b48739,#91651f); font-size: .72rem; }
-  .client-wizard { border-radius: 1.45rem; padding: 1.2rem; }
-  .wizard-progress { margin-bottom: 1.35rem; }
-  .wizard-visual { width: 4.25rem; height: 4.25rem; margin-bottom: 1.15rem; }
-  .client-wizard h2 { font-size: clamp(2rem,11vw,2.75rem); }
-  .wizard-copy { font-size: .94rem; line-height: 1.58; }
-  .wizard-actions { align-items: stretch; flex-direction: column-reverse; }
-  .wizard-actions > button { width: 100%; }
+  .tour-card { right: .55rem !important; bottom: .55rem; left: .55rem !important; top: auto !important; width: auto !important; border-radius: 1.15rem; padding: .9rem; }
+  .tour-card::before { display: none; }
+  .tour-card h2 { font-size: 1.42rem; }
+  .tour-card > p { font-size: .82rem; }
+  .tour-tip { font-size: .7rem; }
+  .tour-actions .gold-button { flex: 1; }
   .admin-shell { padding: 1rem .7rem 7rem; }
   .admin-topbar { margin-bottom: 1rem; padding-bottom: 1.2rem; }
   .admin-back { margin-bottom: 1.2rem; }

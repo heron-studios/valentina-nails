@@ -44,6 +44,17 @@ import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/cata
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(value);
 
+const TOUR_STEPS = [
+  { selector: '[data-tour="intro"]', title: 'Aquí comienza tu diseño', copy: 'La calculadora te acompaña en orden. Cada elección actualiza el precio automáticamente.', tip: 'Puedes cambiar cualquier opción antes de reservar.' },
+  { selector: '[data-tour="technique"]', title: 'Primero, elige la técnica', copy: 'Toca acrílico, gel semipermanente o rubber gel para definir la base de tu set.', tip: 'Las opciones seleccionadas quedan marcadas en rosa y dorado.' },
+  { selector: '[data-tour="shape"]', title: 'Después, elige la forma', copy: 'Compara las siluetas y selecciona la que más te guste. Si eliges acrílico, también podrás definir el largo.', tip: 'La vista previa cambia junto con tu selección.' },
+  { selector: '[data-tour="decorations"]', title: 'Agrega detalles por uña', copy: 'Usa los botones + y − para indicar cuántas uñas llevarán cada decoración.', tip: 'El precio mostrado es por cada uña decorada.' },
+  { selector: '[data-tour="summary"]', title: 'Revisa tu set y tu total', copy: 'Este resumen reúne todas tus elecciones. Cuando estés lista, toca “Elegir fecha”.', tip: 'El precio es estimado y siempre estará visible.' },
+  { selector: '[data-tour="client-data"]', title: 'Escribe tus datos', copy: 'Solo necesitamos tu nombre y teléfono para identificar tu reserva. No tienes que crear una cuenta.', tip: 'Tus datos se usan únicamente para coordinar la cita.' },
+  { selector: '[data-tour="calendar"]', title: 'Selecciona fecha y hora', copy: 'Elige un día disponible y luego uno de los horarios libres que aparecerán a la derecha.', tip: 'Los domingos y horarios ocupados quedan desactivados.' },
+  { selector: '[data-tour="confirm"]', title: 'Confirma por WhatsApp', copy: 'Guardaremos el horario y abriremos WhatsApp con tu diseño, fecha, hora y total listos para enviar.', tip: 'Revisa el mensaje y envíalo para terminar.' },
+] as const;
+
 const dateKey = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -90,6 +101,8 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [wizardStep, setWizardStep] = useState<number | null>(null);
+  const [tourTarget, setTourTarget] = useState({ top: 0, left: 0, width: 0, height: 0 });
+  const [tourCard, setTourCard] = useState({ top: 16, left: 16, width: 360, placement: 'below' as 'above' | 'below' });
 
   const techniques = catalog.techniques.filter((item) => item.active);
   const lengths = catalog.lengths.filter((item) => item.active);
@@ -168,13 +181,48 @@ export default function Home() {
 
   useEffect(() => {
     if (wizardStep === null) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setWizardStep(null);
+    if (wizardStep >= 5) setStage('booking');
+
+    let target: HTMLElement | null = null;
+    let positionTimer = 0;
+    const updatePosition = () => {
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const padding = window.innerWidth < 560 ? 6 : 10;
+      const visibleTop = Math.max(8, rect.top - padding);
+      const visibleBottom = Math.min(window.innerHeight - 8, rect.bottom + padding);
+      const width = Math.min(rect.width + padding * 2, window.innerWidth - 16);
+      const left = Math.max(8, Math.min(rect.left - padding, window.innerWidth - width - 8));
+      setTourTarget({ top: visibleTop, left, width, height: Math.max(56, visibleBottom - visibleTop) });
+
+      const cardWidth = Math.min(370, window.innerWidth - 24);
+      const estimatedHeight = 250;
+      const canPlaceBelow = visibleBottom + estimatedHeight + 20 < window.innerHeight;
+      setTourCard({
+        top: canPlaceBelow ? visibleBottom + 14 : Math.max(12, visibleTop - estimatedHeight - 14),
+        left: Math.max(12, Math.min(rect.left + rect.width / 2 - cardWidth / 2, window.innerWidth - cardWidth - 12)),
+        width: cardWidth,
+        placement: canPlaceBelow ? 'below' : 'above',
+      });
     };
-    document.body.classList.add('wizard-open');
+    const focusTarget = () => {
+      target = document.querySelector<HTMLElement>(TOUR_STEPS[wizardStep].selector);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      positionTimer = window.setTimeout(updatePosition, 420);
+    };
+    const startTimer = window.setTimeout(focusTarget, wizardStep >= 5 ? 120 : 20);
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeWizard();
+    };
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, { passive: true });
     window.addEventListener('keydown', closeOnEscape);
     return () => {
-      document.body.classList.remove('wizard-open');
+      window.clearTimeout(startTimer);
+      window.clearTimeout(positionTimer);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition);
       window.removeEventListener('keydown', closeOnEscape);
     };
   }, [wizardStep]);
@@ -354,7 +402,7 @@ export default function Home() {
       </section>
 
       <section id="calculadora" className="builder-section">
-        <div className="section-heading">
+        <div className="section-heading" data-tour="intro">
           <p className="eyebrow">Tu set, a tu manera</p>
           <h2>Diseña y cotiza</h2>
           <p>Combina técnica, forma y decoraciones. El precio se actualiza en cada elección.</p>
@@ -364,7 +412,7 @@ export default function Home() {
           <div className="builder-main">
             <div className="step-card">
               <div className="step-title"><span>01</span><div><h3>Elige tu técnica</h3><p>La base perfecta para tu estilo.</p></div></div>
-              <div className="technique-grid">
+              <div className="technique-grid" data-tour="technique">
                 {techniques.map((item) => (
                   <button key={item.id} type="button" className={`technique-card ${technique === item.id ? 'selected' : ''}`} onClick={() => setTechnique(item.id)} aria-pressed={technique === item.id}>
                     <span className="technique-icon">{item.id === 'acrylic' ? <Gem /> : item.id === 'gel' ? <Heart /> : <Sparkles />}</span>
@@ -392,7 +440,7 @@ export default function Home() {
 
             <div className="step-card">
               <div className="step-title"><span>{techniqueInfo.usesLengths ? '03' : '02'}</span><div><h3>Elige la forma</h3><p>Una silueta que hable de ti.</p></div></div>
-              <div className="shape-grid">
+              <div className="shape-grid" data-tour="shape">
                 {shapes.map((item) => (
                   <button key={item.id} type="button" className={shape === item.id ? 'selected' : ''} onClick={() => setShape(item.id)} aria-pressed={shape === item.id}>
                     <span className={`nail-shape ${item.className}`} /><strong>{item.name}</strong>{shape === item.id && <Check />}
@@ -403,7 +451,7 @@ export default function Home() {
 
             <div className="step-card">
               <div className="step-title"><span>{techniqueInfo.usesLengths ? '04' : '03'}</span><div><h3>Agrega decoraciones</h3><p>Selecciona cuántas uñas llevarán cada diseño.</p></div></div>
-              <div className="decoration-grid">
+              <div className="decoration-grid" data-tour="decorations">
                 {decorationOptions.slice(0, showAll ? decorationOptions.length : 10).map((item) => (
                   <div className={`decoration-row ${(decorations[item.id] || 0) > 0 ? 'selected' : ''}`} key={item.id}>
                     <span className="decor-icon">{item.icon}</span>
@@ -432,7 +480,7 @@ export default function Home() {
             </div>
           </div>
 
-          <aside className="summary-card">
+          <aside className="summary-card" data-tour="summary">
             <p className="eyebrow">Tu selección</p>
             <h3>Un set muy tú</h3>
             <div className="summary-preview"><span className={`nail-shape ${shapeInfo.className}`} /><Sparkles /></div>
@@ -448,7 +496,7 @@ export default function Home() {
         <section id="booking" className="booking-section">
           <div className="booking-header"><div><p className="eyebrow">Tu momento</p><h2>Agenda tu cita</h2><p>Elige una fecha disponible y el horario que mejor te quede.</p></div><div className="booking-total"><span>Tu set</span><strong>{formatMoney(total)}</strong></div></div>
           <div className="booking-grid">
-            <div className="booking-form">
+            <div className="booking-form" data-tour="client-data">
               <label htmlFor="name">Nombre de la clienta</label>
               <Input id="name" value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Tu nombre completo" className="booking-input" autoComplete="name" />
               <label htmlFor="phone">Teléfono</label>
@@ -456,7 +504,7 @@ export default function Home() {
               <div className="mini-summary"><span><Gem /></span><div><strong>{summary[0]}</strong><p>{summary.slice(1, 4).join(' · ')}{summary.length > 4 ? ` · +${summary.length - 4} más` : ''}</p></div></div>
               <button type="button" className="back-link" onClick={() => { setStage('design'); document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' }); }}>← Editar mi diseño</button>
             </div>
-            <div className="calendar-panel">
+            <div className="calendar-panel" data-tour="calendar">
               <Calendar
                 mode="single"
                 locale={es}
@@ -478,7 +526,7 @@ export default function Home() {
           </div>
           {error && <p className="booking-error" role="alert">{error}</p>}
           {confirmed && <p className="booking-success"><Check /> Cita guardada. Abriendo WhatsApp…</p>}
-          <div className="booking-actions">
+          <div className="booking-actions" data-tour="confirm">
             <Button variant="outline" className="clear-booking" onClick={reset}><Trash2 /> Limpiar todo</Button>
             <Button className="whatsapp-button" onClick={confirmBooking} disabled={submitting || confirmed || !authReady || catalogLoading}>{submitting ? 'Guardando cita…' : 'Guardar y confirmar por WhatsApp'} <MessageCircle /></Button>
           </div>
@@ -504,50 +552,34 @@ export default function Home() {
       )}
 
       <button className="guide-reopen" type="button" onClick={() => setWizardStep(0)} aria-label="Abrir guía de uso">
-        <HelpCircle /><span>¿Cómo funciona?</span>
+        <HelpCircle /><span>Recorrido guiado</span>
       </button>
 
       {wizardStep !== null && (
-        <div className="wizard-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeWizard(); }}>
-          <dialog className="client-wizard" open aria-labelledby="wizard-title">
-            <button className="wizard-close" type="button" onClick={() => closeWizard()} aria-label="Cerrar guía"><X /></button>
-            <div className="wizard-progress" aria-label={`Paso ${wizardStep + 1} de 4`}>
-              {[0, 1, 2, 3].map((step) => <span key={step} className={step <= wizardStep ? 'active' : ''} />)}
+        <>
+          {tourTarget.width > 0 && <div className="tour-spotlight" style={tourTarget} aria-hidden="true" />}
+          <dialog
+            className={`tour-card ${tourCard.placement}`}
+            style={{ top: tourCard.top, left: tourCard.left, width: tourCard.width }}
+            open
+            aria-labelledby="tour-title"
+          >
+            <div className="tour-card-top">
+              <span>Paso {wizardStep + 1} de {TOUR_STEPS.length}</span>
+              <button type="button" onClick={() => closeWizard()} aria-label="Cerrar recorrido"><X /></button>
             </div>
-            <div className="wizard-visual" aria-hidden="true">
-              {wizardStep === 0 && <Sparkles />}
-              {wizardStep === 1 && <Gem />}
-              {wizardStep === 2 && <Paintbrush />}
-              {wizardStep === 3 && <CalendarDays />}
-              <span>{String(wizardStep + 1).padStart(2, '0')}</span>
-            </div>
-            <p className="eyebrow">Guía rápida · {wizardStep + 1} de 4</p>
-            <h2 id="wizard-title">{[
-              'Crea tu cita en minutos',
-              'Elige la base de tu set',
-              'Hazlo completamente tuyo',
-              'Reserva tu horario',
-            ][wizardStep]}</h2>
-            <p className="wizard-copy">{[
-              'Te acompañamos paso a paso. Verás el precio estimado mientras diseñas y no necesitas crear una cuenta.',
-              'Selecciona la técnica, el largo y la forma que prefieras. Puedes cambiar cualquier elección antes de reservar.',
-              'Suma decoraciones por uña, tonos y servicios extra. Usa los botones + y − para indicar cantidades.',
-              'Revisa tu total, elige una fecha y una hora disponible. Al confirmar, abriremos WhatsApp con todos los detalles listos.',
-            ][wizardStep]}</p>
-            <div className="wizard-tip"><Check /> <span>{[
-              'Tus elecciones no se cobran en esta página.',
-              'El precio cambia al instante con cada opción.',
-              'Puedes limpiar todo y empezar de nuevo.',
-              'Los horarios ocupados aparecen desactivados.',
-            ][wizardStep]}</span></div>
-            <div className="wizard-actions">
-              {wizardStep > 0 ? <button type="button" onClick={() => setWizardStep((step) => Math.max(0, (step ?? 0) - 1))}>Atrás</button> : <button type="button" onClick={() => closeWizard()}>Omitir guía</button>}
-              <Button onClick={() => wizardStep === 3 ? closeWizard(true) : setWizardStep((step) => Math.min(3, (step ?? 0) + 1))}>
-                {wizardStep === 3 ? 'Empezar mi diseño' : 'Siguiente'} <ArrowRight />
+            <div className="tour-progress" aria-hidden="true"><span style={{ width: `${((wizardStep + 1) / TOUR_STEPS.length) * 100}%` }} /></div>
+            <h2 id="tour-title">{TOUR_STEPS[wizardStep].title}</h2>
+            <p>{TOUR_STEPS[wizardStep].copy}</p>
+            <div className="tour-tip"><Check /> {TOUR_STEPS[wizardStep].tip}</div>
+            <div className="tour-actions">
+              {wizardStep > 0 ? <button type="button" onClick={() => setWizardStep(wizardStep - 1)}>Atrás</button> : <button type="button" onClick={() => closeWizard()}>Omitir</button>}
+              <Button onClick={() => wizardStep === TOUR_STEPS.length - 1 ? closeWizard() : setWizardStep(wizardStep + 1)}>
+                {wizardStep === TOUR_STEPS.length - 1 ? 'Terminar' : 'Mostrar siguiente'} <ArrowRight />
               </Button>
             </div>
           </dialog>
-        </div>
+        </>
       )}
     </main>
   );
