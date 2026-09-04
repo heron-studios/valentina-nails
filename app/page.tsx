@@ -43,7 +43,7 @@ import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/cata
 import type { DesignExample } from '@/lib/designs';
 
 const formatMoney = (value: number) =>
-  new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(value);
+  new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 0 }).format(value);
 
 const TOUR_STEPS = [
   { selector: '[data-tour="intro"]', title: 'Aquí comienza tu diseño', copy: 'La calculadora te acompaña en orden. Cada elección actualiza el precio automáticamente.', tip: 'Puedes cambiar cualquier opción antes de reservar.' },
@@ -182,7 +182,6 @@ export default function Home() {
   const techniqueInfo = techniques.find((item) => item.id === technique) || techniques[0] || DEFAULT_CATALOG.techniques[0];
   const lengthInfo = lengths.find((item) => item.id === length) || lengths[0] || DEFAULT_CATALOG.lengths[0];
   const shapeInfo = shapes.find((item) => item.id === shape) || shapes[0] || DEFAULT_CATALOG.shapes[0];
-  const brandName = catalog.businessName.replace(/by priscila/gi, '').trim() || 'Valentina Nails';
   const startingPrice = Math.min(
     ...techniques.map((item) => item.usesLengths && lengths.length ? Math.min(...lengths.map((option) => option.price)) : item.price),
   );
@@ -459,11 +458,7 @@ export default function Home() {
         <div className="marble absolute inset-0 -z-20" />
         <ShaderBackdrop />
         <div className="blush-orb absolute -right-24 top-20 -z-10 h-80 w-80 rounded-full" />
-        <nav className="mx-auto flex max-w-7xl items-center justify-between">
-          <a href="#inicio" className="brand-mark" aria-label={`Inicio ${brandName}`}>
-            <span>V</span>
-            <span className="brand-name">{brandName.toUpperCase()}<small>by Priscila</small></span>
-          </a>
+        <nav className="mx-auto flex max-w-7xl items-center justify-end">
           <div className="hidden items-center gap-7 md:flex">
             <a className="nav-link" href="#experiencia">Experiencia</a>
             <a className="nav-link" href="#calculadora">Calculadora</a>
@@ -620,7 +615,7 @@ export default function Home() {
             <h3>Un set muy tú</h3>
             <div className="summary-preview"><span className={`nail-shape ${shapeInfo.className}`} /><Sparkles /></div>
             <ul>{summary.map((item) => <li key={item}><Check />{item}</li>)}</ul>
-            <div className="summary-total"><span>Precio estimado<small>MXN · sujeto a valoración</small></span><strong>{formatMoney(total)}</strong></div>
+            <div className="summary-total"><span>Precio estimado<small>Soles · sujeto a valoración</small></span><strong>{formatMoney(total)}</strong></div>
             <Button className="summary-cta" onClick={goToBooking}>Elegir fecha <ArrowRight /></Button>
             <button className="reset-button" type="button" onClick={reset}><RotateCcw /> Limpiar selección</button>
           </aside>
@@ -682,7 +677,6 @@ export default function Home() {
       </section>
 
       <footer>
-        <a href="#inicio" className="brand-mark"><span>V</span><span className="brand-name">{brandName.toUpperCase()}<small>by Priscila</small></span></a>
         <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
         <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
       </footer>

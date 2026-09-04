@@ -63,10 +63,6 @@ svg { stroke-width: 1.7; }
 .shader-backdrop { position: absolute; inset: 0; z-index: -15; width: 100%; height: 100%; opacity: .92; pointer-events: none; mix-blend-mode: multiply; }
 .eyebrow { margin: 0; font-size: .69rem; font-weight: 750; letter-spacing: .22em; text-transform: uppercase; color: #96691f; }
 
-.brand-mark { display: inline-flex; align-items: center; gap: .7rem; color: inherit; text-decoration: none; }
-.brand-mark > span:first-child { display: grid; width: 2.55rem; height: 2.55rem; place-items: center; border: 1px solid #b98d43; border-radius: 50%; font-family: Georgia, serif; font-size: 1rem; letter-spacing: -.05em; color: #936820; background: rgba(255,255,255,.72); }
-.brand-name { font-family: Georgia, serif; font-size: .83rem; letter-spacing: .18em; line-height: 1.15; }
-.brand-name small { display: block; margin-top: .23rem; font-family: var(--font-geist-sans); font-size: .55rem; font-weight: 500; letter-spacing: .28em; color: #887a72; }
 .nav-link { position: relative; color: #685c56; font-size: .8rem; font-weight: 650; text-decoration: none; }
 .nav-link::after { content: ''; position: absolute; left: 0; right: 100%; bottom: -.4rem; height: 1px; background: #a7782a; transition: right .2s ease; }
 .nav-link:hover::after { right: 0; }
@@ -261,10 +257,8 @@ svg { stroke-width: 1.7; }
 .closing-note { display: flex; max-width: 420px; align-items: flex-start; gap: 1rem; justify-self: end; }
 .closing-note span { display: grid; width: 3.3rem; height: 3.3rem; flex: 0 0 auto; place-items: center; border: 1px solid #bc8a36; border-radius: 50%; color: #a7782a; font-size: 1.4rem; background: rgba(255,255,255,.5); }
 .closing-note p { margin: .35rem 0 0; color: #6d605a; line-height: 1.75; }
-footer { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2rem; padding: 2rem max(2rem,calc((100vw - 1216px)/2)); color: #d8cbc3; background: #2c2421; }
-footer .brand-mark > span:first-child { border-color: #ad884c; color: #d7b97d; background: transparent; }
-footer .brand-name { color: #f8f1ed; }
-footer p { margin: 0; text-align: center; font-size: .63rem; line-height: 1.7; }
+footer { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 2rem; padding: 2rem max(2rem,calc((100vw - 1216px)/2)); color: #d8cbc3; background: #2c2421; }
+footer p { margin: 0; text-align: left; font-size: .63rem; line-height: 1.7; }
 .footer-whatsapp { display: flex; align-items: center; justify-self: end; gap: .45rem; color: #e4d9d3; font-size: .7rem; text-decoration: none; }
 .footer-whatsapp svg { width: .9rem; }
 
@@ -570,7 +564,6 @@ footer p { margin: 0; text-align: center; font-size: .63rem; line-height: 1.7; }
 @media (max-width: 520px) {
   .gold-button, .soft-button { width: 100%; }
   .hero { padding-left: 1.1rem; padding-right: 1.1rem; }
-  .brand-name { display: none; }
   .hero-art { min-height: 285px; }
   .hero-art img { min-height: 285px; }
   .experience-strip { margin-left: .7rem; margin-right: .7rem; }

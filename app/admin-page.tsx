@@ -69,15 +69,15 @@ const formatBookingDate = (date: string) => new Date(`${date}T12:00:00`).toLocal
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
 });
 
-const formatMoney = (value: number) => new Intl.NumberFormat('es-MX', {
-  style: 'currency', currency: 'MXN', maximumFractionDigits: 0,
+const formatMoney = (value: number) => new Intl.NumberFormat('es-PE', {
+  style: 'currency', currency: 'PEN', maximumFractionDigits: 0,
 }).format(value);
 
 function MoneyInput({ value, onChange, label }: { value: number; onChange: (value: number) => void; label: string }) {
   return (
     <label className="admin-money">
       <span>{label}</span>
-      <span><b>$</b><Input type="number" min="0" step="1" value={value} onChange={(event) => onChange(Math.max(0, Number(event.target.value) || 0))} /></span>
+      <span><b>S/</b><Input type="number" min="0" step="1" value={value} onChange={(event) => onChange(Math.max(0, Number(event.target.value) || 0))} /></span>
     </label>
   );
 }
@@ -318,7 +318,7 @@ export default function AdminPage() {
   };
 
   if (!authReady || loading) {
-    return <main className="admin-loading"><span className="brand-mark"><span>V</span></span><p>Preparando el panel…</p></main>;
+    return <main className="admin-loading"><p>Preparando el panel…</p></main>;
   }
 
   if (!isAdmin) {
