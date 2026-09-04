@@ -15,4 +15,19 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
   },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rolldownOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/firebase/')) {
+            return 'vendor-firebase';
+          }
+        },
+      },
+    },
+  },
 });

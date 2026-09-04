@@ -40,6 +40,7 @@ import {
   type ShapeItem,
   type TechniqueItem,
 } from '@/lib/catalog';
+import { formatBookingDatePEN, formatMoneyPEN } from '@/lib/format-utils';
 
 const ADMIN_EMAILS = new Set([
   'brizq02@gmail.com',
@@ -65,13 +66,8 @@ const localDateKey = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const formatBookingDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('es-MX', {
-  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-});
-
-const formatMoney = (value: number) => new Intl.NumberFormat('es-PE', {
-  style: 'currency', currency: 'PEN', maximumFractionDigits: 0,
-}).format(value);
+const formatBookingDate = (date: string) => formatBookingDatePEN(date);
+const formatMoney = (value: number) => formatMoneyPEN(value);
 
 function MoneyInput({ value, onChange, label }: { value: number; onChange: (value: number) => void; label: string }) {
   return (
@@ -397,7 +393,7 @@ export default function AdminPage() {
               {!filteredBookings.length && <div className="admin-empty"><CalendarDays /><strong>No hay reservas en esta vista</strong><span>Las citas confirmadas por las clientas aparecerán aquí automáticamente.</span></div>}
               {filteredBookings.map((booking) => (
                 <article className="admin-booking-card" key={booking.id}>
-                  <div className="admin-booking-date"><span>{new Date(`${booking.bookingDate}T12:00:00`).toLocaleDateString('es-MX', { month: 'short' })}</span><strong>{new Date(`${booking.bookingDate}T12:00:00`).getDate()}</strong><small>{new Date(`${booking.bookingDate}T12:00:00`).toLocaleDateString('es-MX', { weekday: 'short' })}</small></div>
+                  <div className="admin-booking-date"><span>{new Date(`${booking.bookingDate}T12:00:00`).toLocaleDateString('es-PE', { month: 'short' })}</span><strong>{new Date(`${booking.bookingDate}T12:00:00`).getDate()}</strong><small>{new Date(`${booking.bookingDate}T12:00:00`).toLocaleDateString('es-PE', { weekday: 'short' })}</small></div>
                   <div className="admin-booking-main">
                     <div className="admin-booking-heading"><div><span><Clock3 /> {booking.bookingTime}</span><h3>{booking.clientName}</h3></div><strong>{formatMoney(booking.estimatedPrice)}</strong></div>
                     <p className="admin-booking-service">{booking.serviceSummary.split(' | ').join(' · ')}</p>

@@ -1,8 +1,9 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { lazy, StrictMode, Suspense, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Home from '../app/page';
-import AdminPage from '../app/admin-page';
 import '../app/globals.css';
+
+const AdminPage = lazy(() => import('../app/admin-page'));
 
 function App() {
   const [route, setRoute] = useState(window.location.hash);
@@ -13,7 +14,13 @@ function App() {
     return () => window.removeEventListener('hashchange', updateRoute);
   }, []);
 
-  return route.startsWith('#/admin') ? <AdminPage /> : <Home />;
+  return route.startsWith('#/admin') ? (
+    <Suspense fallback={<div className="admin-loading">Cargando panel…</div>}>
+      <AdminPage />
+    </Suspense>
+  ) : (
+    <Home />
+  );
 }
 
 createRoot(document.getElementById('root')!).render(

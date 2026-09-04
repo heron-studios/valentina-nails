@@ -17,6 +17,7 @@ import {
   Plus,
   RotateCcw,
   ShieldCheck,
+  Copy,
   Sparkles,
   Star,
   Trash2,
@@ -39,10 +40,15 @@ import { ShaderBackdrop } from '@/components/shader-backdrop';
 import { ChatAssistant } from '@/components/chat-assistant';
 import { auth, db } from '@/lib/firebase';
 import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/catalog';
+import {
+  formatBookingDatePEN,
+  formatMoneyPEN,
+  generateQuoteShareText,
+  sanitizePhoneNumber,
+} from '@/lib/format-utils';
 import type { DesignExample } from '@/lib/designs';
 
-const formatMoney = (value: number) =>
-  new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 0 }).format(value);
+const formatMoney = formatMoneyPEN;
 
 const TOUR_STEPS = [
   { selector: '[data-tour="intro"]', title: 'Aquí comienza tu diseño', copy: 'La calculadora te acompaña en orden. Cada elección actualiza el precio automáticamente.', tip: 'Puedes cambiar cualquier opción antes de reservar.' },
@@ -98,6 +104,7 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
+  const [copiedQuote, setCopiedQuote] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [wizardStep, setWizardStep] = useState<number | null>(null);
@@ -322,6 +329,24 @@ export default function Home() {
     if (startDesign) setTimeout(() => document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
+  const handleCopyQuote = async () => {
+    const text = generateQuoteShareText({
+      businessName: catalog.businessName,
+      summary,
+      total,
+      whatsapp: catalog.whatsapp,
+    });
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setCopiedQuote(true);
+        setTimeout(() => setCopiedQuote(false), 2400);
+      }
+    } catch {
+      // Ignore clipboard write failures gracefully
+    }
+  };
+
   const confirmBooking = async () => {
     if (!user) {
       setError('La reserva aún se está preparando. Intenta nuevamente en unos segundos.');
@@ -333,9 +358,11 @@ export default function Home() {
     }
     setSubmitting(true);
     setError('');
+    const { cleanPhone } = sanitizePhoneNumber(clientPhone);
+    const finalPhone = cleanPhone || clientPhone.trim();
     const payload = {
       clientName: clientName.trim(),
-      clientPhone: clientPhone.trim(),
+      clientPhone: finalPhone,
       serviceSummary: summary.join(' | '),
       bookingDate: dateKey(selectedDate),
       bookingTime: selectedTime,
@@ -364,13 +391,11 @@ export default function Home() {
         });
       });
       setConfirmed(true);
-      const displayDate = selectedDate.toLocaleDateString('es-MX', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-      });
+      const displayDate = formatBookingDatePEN(selectedDate);
       const message = [
         '¡Hola! Quiero confirmar mi cita 🌸',
         `Nombre: ${clientName.trim()}`,
-        clientPhone.trim() ? `Teléfono: ${clientPhone.trim()}` : '',
+        finalPhone ? `Teléfono: ${finalPhone}` : '',
         `Servicio(s): ${summary.join(', ')}`,
         `Fecha: ${displayDate}`,
         `Hora: ${selectedTime}`,
@@ -390,9 +415,17 @@ export default function Home() {
         <div className="marble absolute inset-0 -z-20" />
         <ShaderBackdrop />
         <div className="blush-orb absolute -right-24 top-20 -z-10 h-80 w-80 rounded-full" />
-        <nav className="mx-auto flex max-w-7xl items-center justify-end">
+        <nav className="atelier-nav mx-auto max-w-7xl">
+          <a href="#inicio" className="brand-lockup">
+            <span className="brand-mark" aria-hidden="true">V</span>
+            <span className="brand-text">
+              <strong>{catalog.businessName}</strong>
+              <small>Atelier by Priscila</small>
+            </span>
+          </a>
           <div className="hidden items-center gap-7 md:flex">
             <a className="nav-link" href="#experiencia">Experiencia</a>
+            <a className="nav-link" href="#galeria">Galería</a>
             <a className="nav-link" href="#calculadora">Calculadora</a>
             <a className="gold-button" href="#booking" onClick={goToBooking}>
               Reservar cita <ArrowRight />
@@ -439,7 +472,7 @@ export default function Home() {
       </section>
 
       {designExamples.length > 0 && (
-        <section className="inspiration-section" aria-labelledby="inspiration-title">
+        <section id="galeria" className="inspiration-section" aria-labelledby="inspiration-title">
           <div className="inspiration-heading">
             <div><p className="eyebrow">Trabajos realizados</p><h2 id="inspiration-title">Elige uno y lo replicamos</h2><p>¿No quieres configurar cada detalle? Escoge una referencia, reserva y listo.</p></div>
             <div className="carousel-controls">
@@ -545,10 +578,25 @@ export default function Home() {
           <aside className="summary-card" data-tour="summary">
             <p className="eyebrow">Tu selección</p>
             <h3>Un set muy tú</h3>
-            <div className="summary-preview"><span className={`nail-shape ${shapeInfo.className}`} /><Sparkles /></div>
+            <div className="summary-preview">
+              <span
+                className={`nail-shape ${shapeInfo.className} ${
+                  techniqueInfo.usesLengths ? `len-${length.replace('length-', '')}` : 'len-3'
+                }`}
+              />
+              <Sparkles />
+            </div>
             <ul>{summary.map((item) => <li key={item}><Check />{item}</li>)}</ul>
             <div className="summary-total"><span>Precio estimado<small>Soles · sujeto a valoración</small></span><strong>{formatMoney(total)}</strong></div>
             <Button className="summary-cta" onClick={goToBooking}>Elegir fecha <ArrowRight /></Button>
+            <button
+              type="button"
+              className={`copy-quote-button ${copiedQuote ? 'copied' : ''}`}
+              onClick={handleCopyQuote}
+            >
+              <Copy />
+              <span>{copiedQuote ? '¡Cotización copiada!' : 'Copiar cotización'}</span>
+            </button>
             <button className="reset-button" type="button" onClick={reset}><RotateCcw /> Limpiar selección</button>
           </aside>
         </div>
@@ -588,7 +636,7 @@ export default function Home() {
               />
               <div className="hours-panel">
                 <div className="live-schedule-note"><i /> Agenda en vivo</div>
-                <div className="hours-title"><Clock3 /><span><strong>{selectedDate ? 'Horarios disponibles' : 'Selecciona una fecha'}</strong><small>{selectedDate ? selectedDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Domingos permanecemos cerradas'}</small></span></div>
+                <div className="hours-title"><Clock3 /><span><strong>{selectedDate ? 'Horarios disponibles' : 'Selecciona una fecha'}</strong><small>{selectedDate ? formatBookingDatePEN(selectedDate) : 'Domingos permanecemos cerradas'}</small></span></div>
                 {selectedDate && <div className="time-grid">{times.map((time) => { const unavailable = occupied.includes(time); return <button key={time} type="button" disabled={unavailable || loadingSlots} className={selectedTime === time ? 'selected' : ''} onClick={() => setSelectedTime(time)}>{time}<small>{unavailable ? 'Ocupado' : 'Disponible'}</small></button>; })}</div>}
                 {selectedDate && times.length > 0 && times.every((time) => occupied.includes(time)) && <p className="fully-booked-message">Este día ya está completo. Selecciona otra fecha disponible.</p>}
               </div>
