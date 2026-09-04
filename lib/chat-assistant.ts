@@ -202,6 +202,25 @@ export function generateLocalBotResponse(params: {
     };
   }
 
+  // 5.5 Guía interactiva o tutorial
+  if (
+    q.includes('guia') ||
+    q.includes('guía') ||
+    q.includes('recorrido') ||
+    q.includes('tutorial') ||
+    q.includes('como funciona') ||
+    q.includes('cómo funciona') ||
+    q.includes('como uso') ||
+    q.includes('cómo uso')
+  ) {
+    return {
+      answer:
+        '¡Con gusto! Nuestro **recorrido interactivo** te enseña paso a paso a personalizar tu técnica, silueta, largo, decoraciones y reservar en minutos.',
+      action: { type: 'tour', label: '✨ Iniciar recorrido guiado' },
+      suggestions: ['¿Qué técnica me conviene?', '¿Cuáles son los horarios?', '¿Cuál es mi precio?'],
+    };
+  }
+
   // 6. Citas / Agenda / Reservar
   if (
     q.includes('cita') ||

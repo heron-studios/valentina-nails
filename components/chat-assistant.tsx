@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
-  Bot,
   ExternalLink,
   RotateCcw,
   Send,
@@ -209,13 +208,13 @@ export function ChatAssistant({
           aria-label="Asistente de Valentina Nails"
         >
           <header>
-            <span>
-              <Bot />
+            <span className="chat-avatar-badge" aria-hidden="true">
+              V
             </span>
-            <div>
-              <strong>Asistente Valentina</strong>
+            <div className="chat-header-info">
+              <strong>Valentina Nails Atelier</strong>
               <small>
-                <i /> Lista para ayudarte
+                <i /> En línea · Asesoría en Soles
               </small>
             </div>
             <div className="chat-header-actions">
@@ -340,15 +339,17 @@ export function ChatAssistant({
       )}
 
       <button
-        className={`chat-launcher ${!hasInteracted && !open ? 'pulse-launcher' : ''}`}
+        className={`chat-launcher ${open ? 'is-open' : ''} ${!hasInteracted && !open ? 'pulse-launcher' : ''}`}
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-controls="chat-panel"
         aria-label={open ? 'Cerrar asistente' : 'Abrir asistente virtual'}
       >
-        <Bot />
-        <span>{open ? 'Cerrar' : '¿Te ayudo?'}</span>
+        <span className="chat-launcher-icon">
+          {open ? <X className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+        </span>
+        <span className="chat-launcher-text">{open ? 'Cerrar chat' : '¿Dudas? Chat atelier'}</span>
         {!hasInteracted && !open && <span className="chat-launcher-badge" />}
       </button>
     </div>

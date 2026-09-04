@@ -10,7 +10,6 @@ import {
   Clock3,
   Gem,
   Heart,
-  HelpCircle,
   MessageCircle,
   Minus,
   Paintbrush,
@@ -693,10 +692,6 @@ export default function Home() {
         }}
         onStartTour={() => setWizardStep(0)}
       />
-
-      <button className="guide-reopen" type="button" onClick={() => setWizardStep(0)} aria-label="Abrir guía de uso">
-        <HelpCircle /><span>Recorrido guiado</span>
-      </button>
 
       {wizardStep !== null && (
         <>

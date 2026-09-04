@@ -100,6 +100,18 @@ test('generateLocalBotResponse provides medical disclaimer for fungus, pain or l
   assert.match(result.answer, /no aplicamos|esperar|recuperación/i);
 });
 
+test('generateLocalBotResponse provides tour action when user asks for guide or tutorial', () => {
+  const result = generateLocalBotResponse({
+    question: '¿Cómo funciona la página o tienen algún tutorial o recorrido?',
+    catalog: DEFAULT_CATALOG,
+    summary: [],
+    total: 0,
+  });
+
+  assert.match(result.answer, /recorrido|interactivo/i);
+  assert.equal(result.action?.type, 'tour');
+});
+
 test('parseChatFormatting converts bold and line breaks safely into renderable tokens', () => {
   const raw = 'Hola **amiga**,\n¿Cómo estás?';
   const tokens = parseChatFormatting(raw);
