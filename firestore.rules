@@ -7,7 +7,10 @@ service cloud.firestore {
     }
 
     function isOwner() {
-      return signedIn() && request.auth.token.email == 'brizq02@gmail.com';
+      return signedIn() && request.auth.token.email in [
+        'brizq02@gmail.com',
+        'valentinamelendezzz2010@gmail.com'
+      ];
     }
 
     match /catalog/{documentId} {

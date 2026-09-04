@@ -29,7 +29,10 @@ import {
   type TechniqueItem,
 } from '@/lib/catalog';
 
-const ADMIN_EMAIL = 'brizq02@gmail.com';
+const ADMIN_EMAILS = new Set([
+  'brizq02@gmail.com',
+  'valentinamelendezzz2010@gmail.com',
+]);
 type ListKey = 'techniques' | 'lengths' | 'shapes' | 'decorations';
 
 function MoneyInput({ value, onChange, label }: { value: number; onChange: (value: number) => void; label: string }) {
@@ -49,7 +52,8 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
+  const userEmail = user?.email ?? '';
+  const isAdmin = ADMIN_EMAILS.has(userEmail.toLowerCase());
 
   useEffect(() => onAuthStateChanged(auth, (currentUser) => {
     setUser(currentUser);
@@ -122,7 +126,7 @@ export default function AdminPage() {
       await setDoc(doc(db, 'catalog', 'main'), {
         ...draft,
         updatedAt: serverTimestamp(),
-        updatedBy: user.email,
+        updatedBy: userEmail,
       });
       setMessage('Cambios publicados. La página de reservas ya está actualizada.');
     } catch (error) {
@@ -163,7 +167,7 @@ export default function AdminPage() {
           <p>Lo que publiques aquí se refleja automáticamente para todas las clientas.</p>
         </div>
         <div className="admin-actions">
-          <span>{user.email}</span>
+          <span>{userEmail}</span>
           <button type="button" onClick={logout}><LogOut /> Salir</button>
           <Button className="gold-button" onClick={save} disabled={saving}><Save /> {saving ? 'Publicando…' : 'Publicar cambios'}</Button>
         </div>
