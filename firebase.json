@@ -1,0 +1,14 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "auth": {
+    "providers": {
+      "anonymous": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Valentina Nails by Priscila",
+        "supportEmail": "brizq02@gmail.com"
+      }
+    }
+  }
+}

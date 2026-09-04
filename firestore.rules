@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return signedIn() && request.auth.token.email == 'brizq02@gmail.com';
+    }
+
+    match /catalog/{documentId} {
+      allow read: if true;
+      allow create, update, delete: if isOwner();
+    }
+
+    match /slots/{slotId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'bookingDate', 'bookingTime', 'bookedAt', 'userId'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.bookedAt == request.time;
+      allow update, delete: if isOwner();
+    }
+
+    match /bookings/{bookingId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'clientName', 'clientPhone', 'serviceSummary', 'bookingDate',
+          'bookingTime', 'estimatedPrice', 'userId',
+          'slotId', 'createdAt'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.clientName is string
+        && request.resource.data.clientName.size() >= 2
+        && request.resource.data.clientName.size() <= 100
+        && request.resource.data.clientPhone is string
+        && request.resource.data.clientPhone.size() <= 30
+        && request.resource.data.serviceSummary is string
+        && request.resource.data.serviceSummary.size() <= 2500
+        && request.resource.data.estimatedPrice is int
+        && request.resource.data.estimatedPrice >= 0
+        && getAfter(/databases/$(database)/documents/slots/$(request.resource.data.slotId)).data.userId == request.auth.uid
+        && getAfter(/databases/$(database)/documents/slots/$(request.resource.data.slotId)).data.bookingDate == request.resource.data.bookingDate
+        && getAfter(/databases/$(database)/documents/slots/$(request.resource.data.slotId)).data.bookingTime == request.resource.data.bookingTime;
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isOwner());
+      allow update, delete: if isOwner();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
