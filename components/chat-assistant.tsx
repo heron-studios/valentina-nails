@@ -349,7 +349,6 @@ export function ChatAssistant({
         <span className="chat-launcher-icon">
           {open ? <X className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
         </span>
-        <span className="chat-launcher-text">{open ? 'Cerrar chat' : '¿Dudas? Chat atelier'}</span>
         {!hasInteracted && !open && <span className="chat-launcher-badge" />}
       </button>
     </div>

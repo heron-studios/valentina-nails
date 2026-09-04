@@ -431,7 +431,6 @@ export default function Home() {
               Reservar cita <ArrowRight />
             </a>
           </div>
-          <a className="nav-mobile" href="#calculadora" aria-label="Ir a la calculadora"><Sparkles /></a>
         </nav>
 
         <div className="mx-auto grid max-w-7xl gap-12 pb-4 pt-16 lg:grid-cols-[1.06fr_.94fr] lg:items-center lg:pt-24">
