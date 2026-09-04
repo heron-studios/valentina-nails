@@ -195,7 +195,7 @@ export default function AdminPage() {
   const addTechnique = () => setDraft((current) => ({
     ...current,
     techniques: [...current.techniques, {
-      id: makeCatalogId('technique'), name: 'Nueva técnica', note: 'Descripción del servicio', price: 0, usesLengths: false, active: true,
+      id: makeCatalogId('technique'), name: 'Nueva técnica', note: 'Descripción del servicio', price: 0, usesLengths: true, active: true,
     }],
   }));
 
@@ -422,28 +422,116 @@ export default function AdminPage() {
         </TabsContent>
 
         <TabsContent value="services">
-      <AdminListSection<TechniqueItem>
-        id="admin-techniques"
-        number="02" title="Técnicas" description="Servicios base. Activa “usa largos” cuando el precio dependa del largo."
-        items={draft.techniques} onAdd={addTechnique} addLabel="Agregar técnica"
-        render={(item) => <>
-          <Input value={item.name} aria-label="Nombre" onChange={(event) => updateItem('techniques', item.id, { name: event.target.value })} />
-          <Input value={item.note} aria-label="Descripción" onChange={(event) => updateItem('techniques', item.id, { note: event.target.value })} />
-          <MoneyInput label="Precio base" value={item.price} onChange={(price) => updateItem('techniques', item.id, { price })} />
-          <label className="admin-check"><input type="checkbox" checked={item.usesLengths} onChange={(event) => updateItem('techniques', item.id, { usesLengths: event.target.checked })} /> Usa largos</label>
-        </>}
-        onToggle={(item) => updateItem('techniques', item.id, { active: !item.active })}
-        onDelete={(item) => removeItem('techniques', item.id)}
-      />
+          {(() => {
+            const techniquesWithLengths = draft.techniques.filter((t) => t.active && t.usesLengths);
+            return (
+              <>
+                <AdminListSection<TechniqueItem>
+                  id="admin-techniques"
+                  number="02"
+                  title="Técnicas base"
+                  description="Servicios principales. Activa “Usa largos” en las técnicas que permitan a la clienta seleccionar largo (ej. Acrílico, Polygel, Esculpidas)."
+                  items={draft.techniques}
+                  onAdd={addTechnique}
+                  addLabel="Agregar técnica"
+                  render={(item) => (
+                    <>
+                      <Input
+                        value={item.name}
+                        aria-label="Nombre"
+                        onChange={(event) => updateItem('techniques', item.id, { name: event.target.value })}
+                      />
+                      <Input
+                        value={item.note}
+                        aria-label="Descripción"
+                        onChange={(event) => updateItem('techniques', item.id, { note: event.target.value })}
+                      />
+                      <MoneyInput
+                        label="Precio base"
+                        value={item.price}
+                        onChange={(price) => updateItem('techniques', item.id, { price })}
+                      />
+                      <label className={`admin-check ${item.usesLengths ? 'uses-lengths-active' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={item.usesLengths}
+                          onChange={(event) => updateItem('techniques', item.id, { usesLengths: event.target.checked })}
+                        />
+                        <span>{item.usesLengths ? '📏 Usa largos' : 'Sin largos'}</span>
+                      </label>
+                    </>
+                  )}
+                  onToggle={(item) => updateItem('techniques', item.id, { active: !item.active })}
+                  onDelete={(item) => removeItem('techniques', item.id)}
+                />
 
-      <AdminListSection<CatalogItem>
-        id="admin-lengths"
-        number="03" title="Largos" description="Precios para las técnicas que dependen del largo."
-        items={draft.lengths} onAdd={addLength} addLabel="Agregar largo"
-        render={(item) => <><Input value={item.name} aria-label="Nombre" onChange={(event) => updateItem('lengths', item.id, { name: event.target.value })} /><MoneyInput label="Precio" value={item.price} onChange={(price) => updateItem('lengths', item.id, { price })} /></>}
-        onToggle={(item) => updateItem('lengths', item.id, { active: !item.active })}
-        onDelete={(item) => removeItem('lengths', item.id)}
-      />
+                {techniquesWithLengths.length === 0 ? (
+                  <div className="admin-warning-box" role="alert">
+                    <strong>⚠️ Ninguna técnica tiene activado “Usa largos”</strong>
+                    <p>
+                      Los largos configurados a continuación no se mostrarán a las clientas hasta que actives la opción
+                      “Usa largos” en al menos una técnica base (como Acrílico, Polygel, Softgel o Esculpidas).
+                    </p>
+                    <button
+                      type="button"
+                      className="admin-quick-fix-button"
+                      onClick={() => {
+                        setDraft((current) => ({
+                          ...current,
+                          techniques: current.techniques.map((t) =>
+                            ['acrílico', 'acrylic', 'polygel', 'softgel', 'esculpidas', 'dual system', 'builder gel'].some((k) =>
+                              t.name.toLowerCase().includes(k),
+                            )
+                              ? { ...t, usesLengths: true }
+                              : t,
+                          ),
+                        }));
+                        setMessage('Largos activados en las técnicas de extensión. Haz clic en "Publicar cambios" para guardar.');
+                      }}
+                    >
+                      ✨ Activar largos en técnicas de extensión recomendadas
+                    </button>
+                  </div>
+                ) : (
+                  <div className="admin-info-box">
+                    <span>
+                      📏 <strong>Técnicas que muestran estos largos:</strong>{' '}
+                      {techniquesWithLengths.map((t) => t.name.trim()).join(', ')}
+                    </span>
+                    <small>
+                      El suplemento de cada largo se suma al precio base de la técnica seleccionada por la clienta.
+                    </small>
+                  </div>
+                )}
+
+                <AdminListSection<CatalogItem>
+                  id="admin-lengths"
+                  number="03"
+                  title="Largos de uña"
+                  description="Suplemento adicional al precio base de la técnica para cada largo (0 = Incluido)."
+                  items={draft.lengths}
+                  onAdd={addLength}
+                  addLabel="Agregar largo"
+                  render={(item) => (
+                    <>
+                      <Input
+                        value={item.name}
+                        aria-label="Nombre"
+                        onChange={(event) => updateItem('lengths', item.id, { name: event.target.value })}
+                      />
+                      <MoneyInput
+                        label="Suplemento"
+                        value={item.price}
+                        onChange={(price) => updateItem('lengths', item.id, { price })}
+                      />
+                    </>
+                  )}
+                  onToggle={(item) => updateItem('lengths', item.id, { active: !item.active })}
+                  onDelete={(item) => removeItem('lengths', item.id)}
+                />
+              </>
+            );
+          })()}
 
       <AdminListSection<ShapeItem>
         id="admin-shapes"

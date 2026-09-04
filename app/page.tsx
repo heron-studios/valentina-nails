@@ -46,6 +46,12 @@ import {
   generateQuoteShareText,
   sanitizePhoneNumber,
 } from '@/lib/format-utils';
+import {
+  calculateSetPrice,
+  formatLengthSupplement,
+  getNailLengthClass,
+  getTechniqueStartingPrice,
+} from '@/lib/pricing';
 import type { DesignExample } from '@/lib/designs';
 
 const formatMoney = formatMoneyPEN;
@@ -122,32 +128,27 @@ export default function Home() {
   const lengthInfo = lengths.find((item) => item.id === length) || lengths[0] || DEFAULT_CATALOG.lengths[0];
   const shapeInfo = shapes.find((item) => item.id === shape) || shapes[0] || DEFAULT_CATALOG.shapes[0];
   const startingPrice = Math.min(
-    ...techniques.map((item) => item.usesLengths && lengths.length ? Math.min(...lengths.map((option) => option.price)) : item.price),
+    ...techniques.map((item) => getTechniqueStartingPrice(item, lengths)),
   );
 
-  const customTotal = useMemo(() => {
-    const base = techniqueInfo.usesLengths ? lengthInfo.price : techniqueInfo.price;
-    const decorationTotal = decorationOptions.reduce(
-      (sum, item) => sum + (decorations[item.id] || 0) * item.price,
-      0,
-    );
-    return (
-      base +
-      decorationTotal +
-      extraTones * catalog.extras.extraTone +
-      (changeShape ? catalog.extras.changeShape : 0) +
-      removal.acrylic * catalog.extras.removalAcrylic +
-      removal.gel * catalog.extras.removalGel +
-      repairs.acrylic * catalog.extras.repairAcrylic +
-      repairs.gel * catalog.extras.repairGel
-    );
-  }, [techniqueInfo, lengthInfo.price, decorationOptions, decorations, extraTones, changeShape, removal, repairs, catalog.extras]);
+  const customTotal = useMemo(() => calculateSetPrice({
+    technique: techniqueInfo,
+    length: lengthInfo,
+    decorations,
+    decorationOptions,
+    extraTones,
+    changeShape,
+    removal,
+    repairs,
+    extras: catalog.extras,
+  }), [techniqueInfo, lengthInfo, decorationOptions, decorations, extraTones, changeShape, removal, repairs, catalog.extras]);
 
   const total = selectedDesign?.price ?? customTotal;
 
   const selectedDecorations = decorationOptions.filter((item) => (decorations[item.id] || 0) > 0);
+  const lengthSupplement = techniqueInfo.usesLengths && lengthInfo.price > 0 ? ` (+${formatMoney(lengthInfo.price)})` : '';
   const customSummary = [
-    `${techniqueInfo.name}${techniqueInfo.usesLengths ? ` · ${lengthInfo.name.toLowerCase()}` : ''}`,
+    `${techniqueInfo.name}${techniqueInfo.usesLengths ? ` · ${lengthInfo.name.toLowerCase()}${lengthSupplement}` : ''}`,
     `Forma ${shapeInfo.name}`,
     ...selectedDecorations.map((item) => `${item.name} ×${decorations[item.id]} uña${decorations[item.id] > 1 ? 's' : ''}`),
     ...(extraTones ? [`${extraTones} tono${extraTones > 1 ? 's' : ''} extra`] : []),
@@ -512,7 +513,11 @@ export default function Home() {
                   <button key={item.id} type="button" className={`technique-card ${technique === item.id ? 'selected' : ''}`} onClick={() => setTechnique(item.id)} aria-pressed={technique === item.id}>
                     <span className="technique-icon">{item.id === 'acrylic' ? <Gem /> : item.id === 'gel' ? <Heart /> : <Sparkles />}</span>
                     <span><strong>{item.name}</strong><small>{item.note}</small></span>
-                    <span className="technique-price">{item.usesLengths && lengths.length ? `desde ${formatMoney(Math.min(...lengths.map((option) => option.price)))}` : formatMoney(item.price)}</span>
+                    <span className="technique-price">
+                      {item.usesLengths && lengths.length
+                        ? `desde ${formatMoney(getTechniqueStartingPrice(item, lengths))}`
+                        : formatMoney(item.price)}
+                    </span>
                     {technique === item.id && <span className="selected-check"><Check /></span>}
                   </button>
                 ))}
@@ -524,9 +529,16 @@ export default function Home() {
                 <div className="step-title"><span>02</span><div><h3>Define el largo</h3><p>Del natural al extra largo.</p></div></div>
                 <div className="length-grid">
                   {lengths.map((item, index) => (
-                    <button key={item.id} type="button" className={length === item.id ? 'selected' : ''} onClick={() => setLength(item.id)} aria-pressed={length === item.id}>
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={length === item.id ? 'selected' : ''}
+                      onClick={() => setLength(item.id)}
+                      aria-pressed={length === item.id}
+                    >
                       <span className="length-line" style={{ height: `${18 + index * 3}px` }} />
-                      <strong>{item.name}</strong><small>{formatMoney(item.price)}</small>
+                      <strong>{item.name}</strong>
+                      <small>{formatLengthSupplement(item.price)}</small>
                     </button>
                   ))}
                 </div>
@@ -581,7 +593,7 @@ export default function Home() {
             <div className="summary-preview">
               <span
                 className={`nail-shape ${shapeInfo.className} ${
-                  techniqueInfo.usesLengths ? `len-${length.replace('length-', '')}` : 'len-3'
+                  techniqueInfo.usesLengths ? getNailLengthClass(length, lengths) : 'len-3'
                 }`}
               />
               <Sparkles />

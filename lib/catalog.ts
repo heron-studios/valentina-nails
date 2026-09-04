@@ -103,11 +103,36 @@ export const DEFAULT_CATALOG: SalonCatalog = {
 export function normalizeCatalog(value: unknown): SalonCatalog {
   if (!value || typeof value !== 'object') return structuredClone(DEFAULT_CATALOG);
   const data = value as Partial<SalonCatalog>;
+
+  const rawTechniques = Array.isArray(data.techniques) ? data.techniques : structuredClone(DEFAULT_CATALOG.techniques);
+  const rawLengths = Array.isArray(data.lengths) ? data.lengths : structuredClone(DEFAULT_CATALOG.lengths);
+
+  // Auto-healing: si existen largos activos configurados pero ninguna técnica tiene usesLengths activo,
+  // habilitar usesLengths en las técnicas de estructura/extensión para no romper la visualización a las clientas.
+  const hasAnyUsesLengths = rawTechniques.some((t) => t.usesLengths);
+  const hasActiveLengths = rawLengths.some((l) => l.active !== false);
+
+  const techniques = rawTechniques.map((tech) => {
+    if (!hasAnyUsesLengths && hasActiveLengths) {
+      const lower = tech.name.toLowerCase();
+      const isExtension = ['acrílico', 'acrylic', 'polygel', 'softgel', 'esculpida', 'dual system', 'builder gel'].some((key) =>
+        lower.includes(key),
+      );
+      if (isExtension) {
+        return { ...tech, usesLengths: true };
+      }
+    }
+    return {
+      ...tech,
+      usesLengths: Boolean(tech.usesLengths),
+    };
+  });
+
   return {
     ...structuredClone(DEFAULT_CATALOG),
     ...data,
-    techniques: Array.isArray(data.techniques) ? data.techniques : structuredClone(DEFAULT_CATALOG.techniques),
-    lengths: Array.isArray(data.lengths) ? data.lengths : structuredClone(DEFAULT_CATALOG.lengths),
+    techniques,
+    lengths: rawLengths,
     shapes: Array.isArray(data.shapes) ? data.shapes : structuredClone(DEFAULT_CATALOG.shapes),
     decorations: Array.isArray(data.decorations) ? data.decorations : structuredClone(DEFAULT_CATALOG.decorations),
     extras: { ...DEFAULT_CATALOG.extras, ...data.extras },

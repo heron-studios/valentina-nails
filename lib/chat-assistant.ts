@@ -229,9 +229,13 @@ export function generateLocalBotResponse(params: {
     q.includes('coffin') ||
     q.includes('stiletto')
   ) {
-    const shapes = catalog.shapes.map((s) => s.name).join(', ');
+    const shapes = catalog.shapes.filter((s) => s.active).map((s) => s.name).join(', ');
+    const activeLengths = catalog.lengths.filter((l) => l.active);
+    const lengthsSummary = activeLengths.length > 0
+      ? `Puedes elegir desde el **${activeLengths[0].name}** hasta el **${activeLengths[activeLengths.length - 1].name}**.`
+      : 'Puedes personalizar la silueta y largo a tu gusto.';
     return {
-      answer: `Trabajamos las siluetas más elegantes: **${shapes}**.\nEn acrílico puedes elegir desde el **Largo 1 hasta el 8**. La forma se adapta a la anatomía de tu mano para estilizar tus dedos.`,
+      answer: `Trabajamos las siluetas más elegantes: **${shapes}**.\n${lengthsSummary} La forma se adapta a la anatomía de tu mano para estilizar tus dedos.`,
       action: { type: 'calculator', label: 'Probar formas en el diseño' },
       suggestions: ['¿Qué técnica me conviene?', 'Ver fotos de diseños', '¿Cuál es mi precio?'],
     };
@@ -259,52 +263,45 @@ export function generateLocalBotResponse(params: {
   // 9. Fotos / Diseños listos / Galería
   if (
     q.includes('foto') ||
-    q.includes('galer') ||
     q.includes('diseño') ||
-    q.includes('diseños') ||
-    q.includes('ejemplo') ||
     q.includes('modelo') ||
-    q.includes('replicar') ||
-    q.includes('inspirac')
+    q.includes('ejemplo') ||
+    q.includes('galeria') ||
+    q.includes('galería') ||
+    q.includes('inspir') ||
+    q.includes('trabajo')
   ) {
     return {
       answer:
-        'En nuestra galería de **Trabajos realizados** puedes ver fotos reales de sets terminados. Si te enamora uno, solo toca **“Quiero replicar este diseño”** y pasarás directo a la agenda con el precio fijado.',
-      action: { type: 'gallery', label: '📸 Ver galería de fotos' },
-      suggestions: ['¿Cómo agendo cita?', '¿Puedo personalizarlo?', 'Hablar por WhatsApp'],
+        'Contamos con una galería de **trabajos reales** listos para replicar en el salón. Si te gusta un diseño de nuestra inspiración, puedes seleccionarlo directamente y agendarlo con su precio cerrado.',
+      action: { type: 'gallery', label: 'Ver galería de trabajos' },
+      suggestions: ['¿Cómo reservo una cita?', '¿Cuánto cuesta un diseño?', 'Ver decoraciones disponibles'],
     };
   }
 
-  // 10. Precios / Cotización general / Total del set actual
+  // 10. Cotización general o preguntas de precios
   if (
     q.includes('precio') ||
-    q.includes('cuánto') ||
-    q.includes('cuanto') ||
     q.includes('costo') ||
+    q.includes('cuesta') ||
     q.includes('vale') ||
     q.includes('cotiz') ||
-    q.includes('total') ||
-    q.includes('set actual')
+    q.includes('presupuesto') ||
+    q.includes('tarifa')
   ) {
     if (summary.length > 0 && total > 0) {
-      const summaryText = summary.slice(0, 4).join(', ');
       return {
-        answer: `Tu selección actual (${summaryText}) tiene un precio estimado de **${formatMoneySoles(
-          total,
-        )}**. El total se recalcula al instante conforme agregas o ajustas detalles en la calculadora.`,
+        answer: `Tu selección actual tiene un precio estimado de **${formatMoneySoles(total)}**.\nIncluye:\n${summary
+          .map((item) => `• ${item}`)
+          .join('\n')}\n¿Deseas elegir la fecha para tu cita o agregar algún detalle más?`,
         action: { type: 'calculator', label: 'Ajustar mi set' },
         suggestions: ['¿Cómo reservo esta cita?', 'Ver decoraciones disponibles', 'Hablar por WhatsApp'],
       };
     }
-    const startingAcr = catalog.techniques.find((t) => t.id === 'acrylic')?.price ?? 280;
-    const startingGel = catalog.techniques.find((t) => t.id === 'gel')?.price ?? 150;
-    const startingRub = catalog.techniques.find((t) => t.id === 'rubber')?.price ?? 200;
+    const activeTechs = catalog.techniques.filter((t) => t.active);
+    const startingPrices = activeTechs.slice(0, 3).map((t) => `**${t.name.trim()}** desde **${formatMoneySoles(t.price)}**`).join(', ');
     return {
-      answer: `Nuestros sets inician desde **${formatMoneySoles(startingGel)}** en Gel semipermanente, **${formatMoneySoles(
-        startingRub,
-      )}** en Rubber gel y **${formatMoneySoles(
-        startingAcr,
-      )}** en Acrílico. El precio final depende del largo y de las decoraciones por uña que elijas.`,
+      answer: `Nuestros servicios inician desde ${startingPrices}. En técnicas con largo (como Acrílico o Polygel), el precio se calcula sumando la técnica base más el suplemento del largo y decoraciones que elijas.`,
       action: { type: 'calculator', label: 'Calcular mi precio' },
       suggestions: ['¿Qué técnica me conviene?', 'Ver decoraciones y extras', '¿Cómo reservo?'],
     };
