@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   BadgeDollarSign,
   Boxes,
+  CalendarDays,
   Check,
+  Clock3,
   Eye,
   EyeOff,
   ImagePlus,
@@ -17,11 +19,11 @@ import {
   Save,
   Search,
   Settings2,
-  Shapes,
   Trash2,
+  UserRound,
 } from 'lucide-react';
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
-import { addDoc, collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,6 +46,32 @@ const ADMIN_EMAILS = new Set([
   'valentinamelendezzz2010@gmail.com',
 ]);
 type ListKey = 'techniques' | 'lengths' | 'shapes' | 'decorations';
+type BookingFilter = 'upcoming' | 'today' | 'past' | 'all';
+type BookingRecord = {
+  id: string;
+  clientName: string;
+  clientPhone: string;
+  serviceSummary: string;
+  bookingDate: string;
+  bookingTime: string;
+  estimatedPrice: number;
+  slotId: string;
+};
+
+const localDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatBookingDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('es-MX', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+});
+
+const formatMoney = (value: number) => new Intl.NumberFormat('es-MX', {
+  style: 'currency', currency: 'MXN', maximumFractionDigits: 0,
+}).format(value);
 
 function MoneyInput({ value, onChange, label }: { value: number; onChange: (value: number) => void; label: string }) {
   return (
@@ -66,6 +94,10 @@ export default function AdminPage() {
   const [designs, setDesigns] = useState<DesignExample[]>([]);
   const [galleryBusy, setGalleryBusy] = useState(false);
   const [newDesign, setNewDesign] = useState({ title: '', description: '', price: 0, imageData: '' });
+  const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [bookingSearch, setBookingSearch] = useState('');
+  const [bookingFilter, setBookingFilter] = useState<BookingFilter>('upcoming');
+  const [bookingBusy, setBookingBusy] = useState('');
 
   const userEmail = user?.email ?? '';
   const isAdmin = ADMIN_EMAILS.has(userEmail.toLowerCase());
@@ -73,6 +105,24 @@ export default function AdminPage() {
   const activeServices = draft.techniques.filter((item) => item.active).length;
   const activeDesigns = draft.decorations.filter((item) => item.active).length;
   const filteredDecorations = draft.decorations.filter((item) => item.name.toLowerCase().includes(decorationSearch.toLowerCase()));
+  const todayKey = localDateKey(new Date());
+  const todaysBookings = bookings.filter((booking) => booking.bookingDate === todayKey);
+  const upcomingBookings = bookings.filter((booking) => booking.bookingDate >= todayKey);
+  const filteredBookings = useMemo(() => {
+    const term = bookingSearch.trim().toLowerCase();
+    return bookings
+      .filter((booking) => {
+        if (bookingFilter === 'today') return booking.bookingDate === todayKey;
+        if (bookingFilter === 'upcoming') return booking.bookingDate >= todayKey;
+        if (bookingFilter === 'past') return booking.bookingDate < todayKey;
+        return true;
+      })
+      .filter((booking) => !term || [booking.clientName, booking.clientPhone, booking.serviceSummary, booking.bookingDate, booking.bookingTime].some((value) => value.toLowerCase().includes(term)))
+      .sort((a, b) => {
+        const comparison = `${a.bookingDate} ${a.bookingTime}`.localeCompare(`${b.bookingDate} ${b.bookingTime}`);
+        return bookingFilter === 'past' ? -comparison : comparison;
+      });
+  }, [bookings, bookingFilter, bookingSearch, todayKey]);
 
   useEffect(() => onAuthStateChanged(auth, (currentUser) => {
     setUser(currentUser);
@@ -89,6 +139,28 @@ export default function AdminPage() {
   useEffect(() => onSnapshot(collection(db, 'designs'), (snapshot) => {
     setDesigns(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DesignExample)));
   }, () => setMessage('No pudimos cargar la galería de diseños.')), []);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setBookings([]);
+      return;
+    }
+    return onSnapshot(collection(db, 'bookings'), (snapshot) => {
+      setBookings(snapshot.docs.map((booking) => {
+        const data = booking.data();
+        return {
+          id: booking.id,
+          clientName: String(data.clientName || 'Clienta sin nombre'),
+          clientPhone: String(data.clientPhone || ''),
+          serviceSummary: String(data.serviceSummary || 'Servicio sin detalle'),
+          bookingDate: String(data.bookingDate || ''),
+          bookingTime: String(data.bookingTime || ''),
+          estimatedPrice: Number(data.estimatedPrice || 0),
+          slotId: String(data.slotId || ''),
+        };
+      }));
+    }, () => setMessage('No pudimos sincronizar las reservas. Revisa tu conexión.'));
+  }, [isAdmin]);
 
   useEffect(() => {
     const warnUnsaved = (event: BeforeUnloadEvent) => {
@@ -228,6 +300,23 @@ export default function AdminPage() {
     }
   };
 
+  const cancelBooking = async (booking: BookingRecord) => {
+    if (!window.confirm(`¿Cancelar la cita de ${booking.clientName} el ${formatBookingDate(booking.bookingDate)} a las ${booking.bookingTime}? El horario volverá a quedar disponible.`)) return;
+    setBookingBusy(booking.id);
+    setMessage('');
+    try {
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'bookings', booking.id));
+      if (booking.slotId) batch.delete(doc(db, 'slots', booking.slotId));
+      await batch.commit();
+      setMessage('Reserva cancelada y horario liberado para las clientas.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No pudimos cancelar la reserva.');
+    } finally {
+      setBookingBusy('');
+    }
+  };
+
   if (!authReady || loading) {
     return <main className="admin-loading"><span className="brand-mark"><span>V</span></span><p>Preparando el panel…</p></main>;
   }
@@ -255,8 +344,8 @@ export default function AdminPage() {
         <div>
           <button type="button" className="admin-back" onClick={() => { window.location.hash = ''; }}><ArrowLeft /> Reservas</button>
           <p className="eyebrow">Valentina Nails / Priscila</p>
-          <h1>Catálogo y precios</h1>
-          <p>Controla servicios, precios y horarios desde un solo lugar.</p>
+          <h1>Panel de administradora</h1>
+          <p>Consulta tu agenda en vivo y administra servicios, precios y diseños.</p>
         </div>
         <div className="admin-actions">
           <span>{userEmail}</span>
@@ -267,20 +356,62 @@ export default function AdminPage() {
 
       {message && <div className={`admin-toast ${message.startsWith('Cambios') ? 'success' : ''}`}><Check /> {message}</div>}
 
-      <section className="admin-overview" aria-label="Resumen del catálogo">
+      <section className="admin-overview" aria-label="Resumen del negocio">
+        <div><span><CalendarDays /></span><p>Citas de hoy<strong>{todaysBookings.length}</strong></p></div>
+        <div><span><Clock3 /></span><p>Próximas citas<strong>{upcomingBookings.length}</strong></p></div>
         <div><span><Boxes /></span><p>Servicios activos<strong>{activeServices}</strong></p></div>
         <div><span><Paintbrush /></span><p>Diseños visibles<strong>{activeDesigns}</strong></p></div>
-        <div><span><Shapes /></span><p>Formas disponibles<strong>{draft.shapes.filter((item) => item.active).length}</strong></p></div>
         <div><span><BadgeDollarSign /></span><p>Estado del panel<strong className={isDirty ? 'pending' : 'saved'}>{isDirty ? 'Sin publicar' : 'Actualizado'}</strong></p></div>
       </section>
 
-      <Tabs defaultValue="general" className="admin-tabs">
+      <Tabs defaultValue="agenda" className="admin-tabs">
         <TabsList className="admin-tabs-list" aria-label="Áreas del panel">
+          <TabsTrigger value="agenda"><CalendarDays /> Agenda</TabsTrigger>
           <TabsTrigger value="general"><Settings2 /> Información</TabsTrigger>
           <TabsTrigger value="services"><Boxes /> Servicios</TabsTrigger>
           <TabsTrigger value="prices"><BadgeDollarSign /> Precios y extras</TabsTrigger>
           <TabsTrigger value="gallery"><ImagePlus /> Galería</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="agenda">
+          <section className="admin-card agenda-manager">
+            <div className="admin-section-title">
+              <div><span><CalendarDays /></span><div><h2>Reservas en vivo</h2><p>Las nuevas citas aparecen aquí automáticamente. Al cancelar, el horario se libera para otra clienta.</p></div></div>
+              <div className="agenda-live"><i /> Sincronizada</div>
+            </div>
+
+            <div className="agenda-summary">
+              <div><span>Hoy</span><strong>{todaysBookings.length}</strong><small>{todaysBookings.length === 1 ? 'cita agendada' : 'citas agendadas'}</small></div>
+              <div><span>Por atender</span><strong>{upcomingBookings.length}</strong><small>desde hoy en adelante</small></div>
+              <div><span>Próxima cita</span><strong className="next-booking">{upcomingBookings.sort((a, b) => `${a.bookingDate} ${a.bookingTime}`.localeCompare(`${b.bookingDate} ${b.bookingTime}`))[0]?.bookingTime || '—'}</strong><small>{upcomingBookings[0]?.clientName || 'Sin citas pendientes'}</small></div>
+            </div>
+
+            <div className="admin-agenda-toolbar">
+              <label className="admin-search"><Search /><input value={bookingSearch} onChange={(event) => setBookingSearch(event.target.value)} placeholder="Buscar clienta, teléfono o servicio…" aria-label="Buscar reserva" /></label>
+              <div className="booking-filters" aria-label="Filtrar reservas">
+                {([['upcoming', 'Próximas'], ['today', 'Hoy'], ['past', 'Anteriores'], ['all', 'Todas']] as const).map(([value, label]) => <button type="button" key={value} className={bookingFilter === value ? 'active' : ''} onClick={() => setBookingFilter(value)}>{label}</button>)}
+              </div>
+            </div>
+
+            <div className="admin-bookings">
+              {!filteredBookings.length && <div className="admin-empty"><CalendarDays /><strong>No hay reservas en esta vista</strong><span>Las citas confirmadas por las clientas aparecerán aquí automáticamente.</span></div>}
+              {filteredBookings.map((booking) => (
+                <article className="admin-booking-card" key={booking.id}>
+                  <div className="admin-booking-date"><span>{new Date(`${booking.bookingDate}T12:00:00`).toLocaleDateString('es-MX', { month: 'short' })}</span><strong>{new Date(`${booking.bookingDate}T12:00:00`).getDate()}</strong><small>{new Date(`${booking.bookingDate}T12:00:00`).toLocaleDateString('es-MX', { weekday: 'short' })}</small></div>
+                  <div className="admin-booking-main">
+                    <div className="admin-booking-heading"><div><span><Clock3 /> {booking.bookingTime}</span><h3>{booking.clientName}</h3></div><strong>{formatMoney(booking.estimatedPrice)}</strong></div>
+                    <p className="admin-booking-service">{booking.serviceSummary.split(' | ').join(' · ')}</p>
+                    <div className="admin-booking-meta"><span><UserRound /> {booking.clientPhone || 'Sin teléfono'}</span><span><CalendarDays /> {formatBookingDate(booking.bookingDate)}</span></div>
+                  </div>
+                  <div className="admin-booking-actions">
+                    {booking.clientPhone && <a href={`tel:${booking.clientPhone.replace(/[^\d+]/g, '')}`}>Llamar</a>}
+                    <button type="button" className="danger" disabled={bookingBusy === booking.id} onClick={() => void cancelBooking(booking)}><Trash2 /> {bookingBusy === booking.id ? 'Cancelando…' : 'Cancelar y liberar'}</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </TabsContent>
 
         <TabsContent value="general">
       <section id="admin-business" className="admin-card admin-business">

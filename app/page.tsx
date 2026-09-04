@@ -30,12 +30,9 @@ import { onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth'
 import {
   collection,
   doc,
-  getDocs,
   onSnapshot,
-  query,
   runTransaction,
   serverTimestamp,
-  where,
 } from 'firebase/firestore';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -164,8 +161,8 @@ export default function Home() {
   const [clientPhone, setClientPhone] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState('');
-  const [occupied, setOccupied] = useState<string[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [occupiedByDate, setOccupiedByDate] = useState<Record<string, string[]>>({});
+  const [loadingSlots, setLoadingSlots] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
@@ -228,6 +225,14 @@ export default function Home() {
 
   const day = selectedDate?.getDay();
   const times = day === 6 ? catalog.schedule.saturday : catalog.schedule.weekdays;
+  const occupied = useMemo(
+    () => selectedDate ? occupiedByDate[dateKey(selectedDate)] ?? [] : [],
+    [occupiedByDate, selectedDate],
+  );
+  const isFullyBooked = (date: Date) => {
+    const availableTimes = date.getDay() === 6 ? catalog.schedule.saturday : catalog.schedule.weekdays;
+    return availableTimes.length > 0 && (occupiedByDate[dateKey(date)]?.length ?? 0) >= availableTimes.length;
+  };
 
   useEffect(() => onSnapshot(doc(db, 'catalog', 'main'), (snapshot) => {
     setCatalog(normalizeCatalog(snapshot.exists() ? snapshot.data() : DEFAULT_CATALOG));
@@ -255,6 +260,22 @@ export default function Home() {
       .map((item) => ({ id: item.id, ...item.data() } as DesignExample))
       .filter((item) => item.active));
   }, () => setDesignExamples([])), []);
+
+  useEffect(() => onSnapshot(collection(db, 'slots'), (snapshot) => {
+    const next: Record<string, string[]> = {};
+    snapshot.docs.forEach((slot) => {
+      const data = slot.data();
+      const bookingDate = String(data.bookingDate || '');
+      const bookingTime = String(data.bookingTime || '');
+      if (!bookingDate || !bookingTime) return;
+      next[bookingDate] = [...(next[bookingDate] ?? []), bookingTime];
+    });
+    setOccupiedByDate(next);
+    setLoadingSlots(false);
+  }, () => {
+    setOccupiedByDate({});
+    setLoadingSlots(false);
+  }), []);
 
   useEffect(() => {
     try {
@@ -319,14 +340,15 @@ export default function Home() {
   }, [catalog, technique, length, shape, techniques, lengths, shapes]);
 
   useEffect(() => {
-    if (!selectedDate) return;
     setSelectedTime('');
-    setLoadingSlots(true);
-    getDocs(query(collection(db, 'slots'), where('bookingDate', '==', dateKey(selectedDate))))
-      .then((snapshot) => setOccupied(snapshot.docs.map((slot) => String(slot.data().bookingTime))))
-      .catch(() => setOccupied([]))
-      .finally(() => setLoadingSlots(false));
   }, [selectedDate]);
+
+  useEffect(() => {
+    if (selectedTime && occupied.includes(selectedTime)) {
+      setSelectedTime('');
+      setError('Ese horario acaba de reservarse. Elige otro disponible.');
+    }
+  }, [occupied, selectedTime]);
 
   const reset = () => {
     setTechnique(techniques[0]?.id || 'acrylic');
@@ -426,10 +448,6 @@ export default function Home() {
       window.location.href = `https://wa.me/${catalog.whatsapp}?text=${encodeURIComponent(message)}`;
     } catch (bookingError) {
       setError(bookingError instanceof Error ? bookingError.message : 'Ocurrió un error. Intenta otra vez.');
-      if (selectedDate) {
-        const snapshot = await getDocs(query(collection(db, 'slots'), where('bookingDate', '==', dateKey(selectedDate))));
-        setOccupied(snapshot.docs.map((slot) => String(slot.data().bookingTime)));
-      }
     } finally {
       setSubmitting(false);
     }
@@ -627,7 +645,13 @@ export default function Home() {
                 locale={es}
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                disabled={{ before: new Date(), dayOfWeek: [0] }}
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date < today || date.getDay() === 0 || isFullyBooked(date);
+                }}
+                modifiers={{ fullyBooked: isFullyBooked }}
+                modifiersClassNames={{ fullyBooked: 'fully-booked-day' }}
                 className="booking-calendar"
                 classNames={{
                   month_grid: 'w-full border-collapse',
@@ -636,8 +660,10 @@ export default function Home() {
                 }}
               />
               <div className="hours-panel">
+                <div className="live-schedule-note"><i /> Agenda en vivo</div>
                 <div className="hours-title"><Clock3 /><span><strong>{selectedDate ? 'Horarios disponibles' : 'Selecciona una fecha'}</strong><small>{selectedDate ? selectedDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Domingos permanecemos cerradas'}</small></span></div>
                 {selectedDate && <div className="time-grid">{times.map((time) => { const unavailable = occupied.includes(time); return <button key={time} type="button" disabled={unavailable || loadingSlots} className={selectedTime === time ? 'selected' : ''} onClick={() => setSelectedTime(time)}>{time}<small>{unavailable ? 'Ocupado' : 'Disponible'}</small></button>; })}</div>}
+                {selectedDate && times.length > 0 && times.every((time) => occupied.includes(time)) && <p className="fully-booked-message">Este día ya está completo. Selecciona otra fecha disponible.</p>}
               </div>
             </div>
           </div>
