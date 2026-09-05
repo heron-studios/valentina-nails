@@ -544,10 +544,12 @@ footer p { margin: 0; text-align: left; font-size: .63rem; line-height: 1.7; }
 .chat-panel {
   position: absolute;
   right: 0;
+  left: auto;
+  margin: 0;
   bottom: calc(100% + 0.85rem);
   display: flex;
   width: 380px;
-  max-width: calc(100vw - 2.5rem);
+  max-width: calc(100vw - 2rem);
   height: min(580px, calc(100dvh - 8rem));
   overflow: hidden;
   border: 1.5px solid rgba(181, 137, 61, 0.3);

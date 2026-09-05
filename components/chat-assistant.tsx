@@ -201,10 +201,9 @@ export function ChatAssistant({
   return (
     <div className={`chat-assistant ${open ? 'open' : ''}`}>
       {open && (
-        <dialog
+        <section
           id="chat-panel"
           className="chat-panel"
-          open
           aria-label="Asistente de Valentina Nails"
         >
           <header>
@@ -335,7 +334,7 @@ export function ChatAssistant({
               <Send />
             </button>
           </form>
-        </dialog>
+        </section>
       )}
 
       <button
