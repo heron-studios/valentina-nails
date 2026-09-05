@@ -794,7 +794,7 @@ export default function Home() {
         {/* TAB 4: CALCULADORA */}
         {activeTab === 'calculadora' && (
           <div className="tab-view-container">
-            <section id="calculadora" className="px-4 py-3 sm:px-8 sm:py-3 lg:px-12 max-w-7xl mx-auto flex-1 w-full flex flex-col justify-between overflow-hidden">
+            <section id="calculadora" className="px-4 py-1.5 sm:px-8 sm:py-2 lg:px-12 max-w-7xl mx-auto flex-1 w-full flex flex-col justify-between overflow-hidden">
               {/* Step Navigation Bar */}
               <div className="calc-step-nav flex-shrink-0" role="tablist" aria-label="Pasos de personalización">
                 {CALC_STEPS.map((step, idx) => (
@@ -820,7 +820,7 @@ export default function Home() {
                     {/* STEP 1: TECNICA */}
                     {calcStepIndex === 0 && (
                       <div>
-                        <div className="mb-3">
+                        <div className="mb-2">
                           <h3 className="text-base font-semibold text-[#281f1c]">Elige tu técnica base</h3>
                           <p className="text-xs text-[#6a5c55]">La base perfecta para tu estilo y duración deseada.</p>
                         </div>
@@ -855,14 +855,14 @@ export default function Home() {
                     {/* STEP 2: SILUETA Y LARGO */}
                     {calcStepIndex === 1 && (
                       <div>
-                        <div className="mb-3">
+                        <div className="mb-2">
                           <h3 className="text-base font-semibold text-[#281f1c]">Silueta anatómica y largo</h3>
                           <p className="text-xs text-[#6a5c55]">Compara las formas y define la extensión de tus uñas.</p>
                         </div>
 
                         {techniqueInfo?.usesLengths && (
-                          <div className="mb-4">
-                            <h4 className="text-xs font-semibold text-[#7a5925] uppercase tracking-wider mb-2">
+                          <div className="mb-2.5">
+                            <h4 className="text-xs font-semibold text-[#7a5925] uppercase tracking-wider mb-1.5">
                               Largo milimétrico
                             </h4>
                             <div className="length-grid">
@@ -884,7 +884,7 @@ export default function Home() {
                         )}
 
                         <div>
-                          <h4 className="text-xs font-semibold text-[#7a5925] uppercase tracking-wider mb-2">
+                          <h4 className="text-xs font-semibold text-[#7a5925] uppercase tracking-wider mb-1.5">
                             Forma de uña
                           </h4>
                           <div className="shape-grid" data-tour="shape">
@@ -909,7 +909,7 @@ export default function Home() {
                     {/* STEP 3: DECORACIONES */}
                     {calcStepIndex === 2 && (
                       <div>
-                        <div className="mb-3">
+                        <div className="mb-2">
                           <h3 className="text-base font-semibold text-[#281f1c]">Diseños y decoraciones</h3>
                           <p className="text-xs text-[#6a5c55]">Selecciona cuántas uñas llevarán cada efecto artesanal.</p>
                         </div>
@@ -930,7 +930,7 @@ export default function Home() {
                           ))}
                         </div>
                         {decorationOptions.length > 10 && (
-                          <button className="show-more mt-2" type="button" onClick={() => setShowAll((v) => !v)}>
+                          <button className="show-more mt-1.5" type="button" onClick={() => setShowAll((v) => !v)}>
                             {showAll ? 'Ver menos diseños' : `Ver ${decorationOptions.length - 10} diseños más`}
                             <ChevronRight className={showAll ? 'rotate-90' : ''} />
                           </button>
@@ -941,7 +941,7 @@ export default function Home() {
                     {/* STEP 4: EXTRAS */}
                     {calcStepIndex === 3 && (
                       <div>
-                        <div className="mb-3">
+                        <div className="mb-2">
                           <h3 className="text-base font-semibold text-[#281f1c]">Últimos detalles y cuidados</h3>
                           <p className="text-xs text-[#6a5c55]">Personaliza tonos extra, cambio de forma o retiros profesionales.</p>
                         </div>
@@ -1012,12 +1012,12 @@ export default function Home() {
                 {/* Right Compact Summary Card */}
                 <aside className="compact-summary-card" data-tour="summary">
                   <div>
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-0.5">
                       <p className="eyebrow text-xs">Tu selección</p>
                       <span className="text-[0.68rem] text-[#94671e] font-semibold uppercase">Atelier</span>
                     </div>
-                    <h3 className="text-base font-semibold text-[#281f1c] mb-1.5">Un set muy tú</h3>
-                    <div className="summary-preview mb-2 py-0.5">
+                    <h3 className="text-base font-semibold text-[#281f1c] mb-1">Un set muy tú</h3>
+                    <div className="summary-preview mb-1.5">
                       <span
                         className={`nail-shape ${shapeInfo.className} ${
                           techniqueInfo?.usesLengths ? getNailLengthClass(length, lengths) : 'len-3'
@@ -1025,7 +1025,7 @@ export default function Home() {
                       />
                       <Sparkles className="w-4 h-4 text-[#c9a054]" />
                     </div>
-                    <ul className="text-xs space-y-1 max-h-28 overflow-y-auto pr-1 mb-2">
+                    <ul className="text-xs space-y-1 max-h-20 overflow-y-auto pr-1 mb-1.5">
                       {summary.map((item) => (
                         <li key={item} className="flex items-center gap-1.5 text-[#5e514a]">
                           <Check className="w-3 h-3 text-[#c9a054] flex-shrink-0" />
@@ -1036,9 +1036,9 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <div className="summary-total mb-2 pt-2 border-t border-[#ebd8ce]">
+                    <div className="summary-total mb-1.5 pt-1.5 border-t border-[#ebd8ce]">
                       {discountAmount > 0 ? (
-                        <div className="summary-discount-box p-2">
+                        <div className="summary-discount-box p-1.5">
                           <div className="summary-discount-row text-xs">
                             <span>Precio en salón:</span>
                             <span className="line-through-price">{formatMoney(anchorTotal)}</span>
@@ -1070,7 +1070,7 @@ export default function Home() {
                     <Button className="summary-cta w-full py-2 text-xs" onClick={goToBooking}>
                       {technique || selectedDesign ? <>Elegir fecha <ArrowRight className="w-3.5 h-3.5" /></> : <>Elegir técnica <ArrowRight className="w-3.5 h-3.5" /></>}
                     </Button>
-                    <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center gap-2 mt-1">
                       <button
                         type="button"
                         className={`copy-quote-button flex-1 text-[0.68rem] py-1 ${copiedQuote ? 'copied' : ''}`}
