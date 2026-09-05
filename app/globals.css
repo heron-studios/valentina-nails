@@ -57,7 +57,7 @@ svg { stroke-width: 1.7; }
 .font-display { font-family: var(--font-heading), Georgia, serif; }
 
 /* Atelier Header & Brand */
-.atelier-nav { display: flex; width: 100%; max-width: 80rem; margin: 0 auto; align-items: center; justify-content: space-between; gap: 1rem; }
+.atelier-nav { display: flex; width: 100%; max-width: 80rem; margin: 0 auto; align-items: center; justify-content: flex-end; gap: 1rem; }
 .brand-lockup { display: flex; align-items: center; gap: .75rem; text-decoration: none; color: inherit; }
 .brand-mark { display: grid; width: 2.6rem; height: 2.6rem; place-items: center; border: 1.5px solid #c9a054; border-radius: 50%; color: #94671e; background: linear-gradient(135deg,#fffbf5 0%,#f8edd9 100%); font-family: var(--font-heading), Georgia, serif; font-size: 1.2rem; font-weight: 600; box-shadow: 0 4px 14px rgba(181,137,61,.15); transition: transform .2s ease; }
 .brand-lockup:hover .brand-mark { transform: scale(1.05); }

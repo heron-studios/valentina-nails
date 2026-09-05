@@ -416,13 +416,7 @@ export default function Home() {
         <ShaderBackdrop />
         <div className="blush-orb absolute -right-24 top-12 -z-10 h-96 w-96 rounded-full" />
         <div className="gold-orb" aria-hidden="true" />
-        <nav className="atelier-nav mx-auto max-w-7xl">
-          <a href="#inicio" className="brand-lockup">
-            <span className="brand-mark" aria-hidden="true">V</span>
-            <span className="brand-text">
-              <strong>{catalog.businessName}</strong>
-            </span>
-          </a>
+        <nav className="atelier-nav mx-auto max-w-7xl justify-end">
           <div className="hidden items-center gap-7 md:flex">
             <a className="nav-link" href="#experiencia">Experiencia</a>
             <a className="nav-link" href="#galeria">Galería</a>
