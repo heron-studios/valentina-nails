@@ -10,7 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "node --experimental-strip-types --test test/*.test.ts",
-    "lint": "oxlint app/page.tsx app/admin-page.tsx components/chat-assistant.tsx components/liquid-glass-hero.tsx components/shader-backdrop.tsx components/ui/button.tsx components/ui/calendar.tsx components/ui/input.tsx lib/catalog.ts lib/chat-assistant.ts lib/designs.ts lib/firebase.ts lib/format-utils.ts lib/pricing.ts lib/utils.ts src/main.tsx vite.config.ts",
+    "lint": "oxlint app/page.tsx app/admin-page.tsx components/chat-assistant.tsx components/floating-summary-bar.tsx components/liquid-glass-hero.tsx components/shader-backdrop.tsx components/ui/button.tsx components/ui/calendar.tsx components/ui/input.tsx lib/catalog.ts lib/chat-assistant.ts lib/designs.ts lib/firebase.ts lib/format-utils.ts lib/pricing.ts lib/utils.ts src/main.tsx vite.config.ts",
     "format": "oxfmt"
   },
   "dependencies": {

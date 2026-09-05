@@ -37,6 +37,7 @@ import { Input } from '@/components/ui/input';
 import { ShaderBackdrop } from '@/components/shader-backdrop';
 import { LiquidGlassHero } from '@/components/liquid-glass-hero';
 import { ChatAssistant } from '@/components/chat-assistant';
+import { FloatingSummaryBar } from '@/components/floating-summary-bar';
 import { auth, db } from '@/lib/firebase';
 import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/catalog';
 import {
@@ -762,12 +763,20 @@ export default function Home() {
         <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
       </footer>
 
-      {stage === 'design' && (
-        <div className="mobile-price-bar" aria-label="Resumen de precio">
-          <span><small>Tu set estimado</small><strong>{formatMoney(total)}</strong></span>
-          <Button onClick={goToBooking}>Elegir fecha <ArrowRight /></Button>
-        </div>
-      )}
+      <FloatingSummaryBar
+        summary={summary}
+        total={total}
+        anchorTotal={anchorTotal}
+        discountAmount={discountAmount}
+        formatMoney={formatMoney}
+        hasTechnique={Boolean(technique)}
+        hasSelectedDesign={Boolean(selectedDesign)}
+        onNavigateToBooking={goToBooking}
+        onCopyQuote={handleCopyQuote}
+        onReset={reset}
+        copiedQuote={copiedQuote}
+        stage={stage}
+      />
 
       <ChatAssistant
         catalog={catalog}
