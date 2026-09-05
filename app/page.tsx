@@ -297,7 +297,9 @@ export default function Home() {
   }, [wizardStep]);
 
   useEffect(() => {
-    if (!techniques.some((item) => item.id === technique) && techniques[0]) setTechnique(techniques[0].id);
+    if (technique && !techniques.some((item) => item.id === technique)) {
+      setTechnique(techniques[0]?.id || '');
+    }
     if (!lengths.some((item) => item.id === length) && lengths[0]) setLength(lengths[0].id);
     if (!shapes.some((item) => item.id === shape) && shapes[0]) setShape(shapes[0].id);
   }, [catalog, technique, length, shape, techniques, lengths, shapes]);
@@ -493,6 +495,7 @@ export default function Home() {
             onSelectLength={(newLength) => setLength(newLength)}
             currentTechnique={technique}
             onSelectTechnique={(newTech) => setTechnique(newTech)}
+            availableTechniques={displayTechniques}
             totalPrice={total}
             anchorPrice={anchorTotal}
             discountAmount={discountAmount}

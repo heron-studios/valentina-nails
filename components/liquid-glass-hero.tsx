@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Sparkles, Wand2, Gem, ShieldCheck } from 'lucide-react';
+import type { TechniqueItem } from '../lib/catalog';
 
 export type LiquidGlassHeroProps = {
   currentShape?: string;
@@ -10,6 +11,7 @@ export type LiquidGlassHeroProps = {
   onSelectLength?: (lengthId: string) => void;
   currentTechnique?: string;
   onSelectTechnique?: (techId: string) => void;
+  availableTechniques?: TechniqueItem[];
   totalPrice: number;
   anchorPrice?: number;
   discountAmount?: number;
@@ -136,6 +138,7 @@ export function LiquidGlassHero({
   onSelectLength,
   currentTechnique = '',
   onSelectTechnique,
+  availableTechniques = [],
   totalPrice,
   anchorPrice = 0,
   discountAmount = 0,
@@ -147,7 +150,7 @@ export function LiquidGlassHero({
   const [selectedTone, setSelectedTone] = useState<NailTone>('rose');
   const [localShape, setLocalShape] = useState<string>(currentShape || 'almond');
   const [localLength, setLocalLength] = useState<string>(currentLength || 'length-4');
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [, setHasInteracted] = useState(false);
   const [webglSupported, setWebglSupported] = useState(true);
 
   // Sync external props with local state
@@ -329,14 +332,14 @@ export function LiquidGlassHero({
 
     switch (shape) {
       case 'coffin':
-        return `M36 236 C35 180 43 ${tipY + 44} 54 ${tipY} L106 ${tipY} C117 ${tipY + 44} 125 180 124 236 C105 244 55 244 36 236 Z`;
+        return `M36 234 C36 175 44 ${tipY + 38} 56 ${tipY} L104 ${tipY} C116 ${tipY + 38} 124 175 124 234 C105 244 55 244 36 234 Z`;
       case 'stiletto':
-        return `M36 236 C34 175 32 ${tipY + 70} 80 ${Math.max(8, tipY - 4)} C128 ${tipY + 70} 126 175 124 236 C105 244 55 244 36 236 Z`;
+        return `M36 234 C35 170 42 ${tipY + 50} 80 ${tipY} C118 ${tipY + 50} 125 170 124 234 C105 244 55 244 36 234 Z`;
       case 'square':
-        return `M36 236 L36 ${tipY + 8} C36 ${tipY + 2} 40 ${tipY} 46 ${tipY} L114 ${tipY} C120 ${tipY} 124 ${tipY + 2} 124 ${tipY + 8} L124 236 C105 244 55 244 36 236 Z`;
+        return `M36 234 L36 ${tipY + 8} Q36 ${tipY} 44 ${tipY} L116 ${tipY} Q124 ${tipY} 124 ${tipY + 8} L124 234 C105 244 55 244 36 234 Z`;
       case 'almond':
       default:
-        return `M36 236 C34 185 30 ${tipY + 60} 80 ${tipY} C130 ${tipY + 60} 126 185 124 236 C105 244 55 244 36 236 Z`;
+        return `M36 234 C36 175 46 ${tipY + 45} 62 ${tipY + 14} C70 ${tipY} 90 ${tipY} 98 ${tipY + 14} C114 ${tipY + 45} 124 175 124 234 C105 244 55 244 36 234 Z`;
     }
   }, [localShape, tipY]);
 
@@ -465,25 +468,39 @@ export function LiquidGlassHero({
                   <rect x="0" y="0" width="160" height="260" fill="url(#glazedShimmer)" />
                 )}
 
-                {/* Artisan Golden Foil Vein (100% contained inside clip path) */}
+                {/* Artisan 18k Liquid Gold Marble Vein (100% contained inside clip path) */}
                 <path
-                  d="M50 225 C68 180 54 130 92 88 C104 74 108 52 98 26"
+                  d="M 52 228 C 64 185 54 140 76 100 C 86 82 92 56 86 28"
                   stroke="url(#goldVeinGradient)"
-                  strokeWidth="2.8"
+                  strokeWidth="2.4"
                   strokeLinecap="round"
                   className="gold-foil-vein"
                 />
                 <path
-                  d="M66 148 C78 138 84 126 82 110"
+                  d="M 72 108 C 84 94 98 84 104 68"
                   stroke="url(#goldVeinGradient)"
-                  strokeWidth="1.6"
+                  strokeWidth="1.4"
                   strokeLinecap="round"
-                  opacity="0.85"
+                  strokeOpacity="0.9"
+                  className="gold-foil-vein"
                 />
+                <path
+                  d="M 56 168 C 48 154 44 142 46 128"
+                  stroke="url(#goldVeinGradient)"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                  strokeOpacity="0.75"
+                  className="gold-foil-vein"
+                />
+                <circle cx="84" cy="46" r="1.5" fill="url(#goldVeinGradient)" opacity="0.95" />
+                <circle cx="98" cy="76" r="1.3" fill="url(#goldVeinGradient)" opacity="0.9" />
+                <circle cx="62" cy="132" r="1.4" fill="url(#goldVeinGradient)" opacity="0.85" />
+                <circle cx="50" cy="188" r="1.2" fill="url(#goldVeinGradient)" opacity="0.8" />
+                <circle cx="78" cy="62" r="1" fill="url(#goldVeinGradient)" opacity="0.85" />
 
                 {/* Liquid Glass Curved Specular Highlight Streak */}
                 <path
-                  d="M54 220 C46 160 46 110 74 30"
+                  d={`M52 220 C46 165 48 ${tipY + 60} 72 ${tipY + 10}`}
                   stroke="#ffffff"
                   strokeWidth="2.2"
                   strokeOpacity="0.75"
@@ -660,34 +677,42 @@ export function LiquidGlassHero({
         {!hasSelectedTechnique && (
           <div className="hero-quick-techs" aria-label="Elegir técnica base">
             <span className="quick-tech-lead">O escoge tu base:</span>
-            <button
-              type="button"
-              className="quick-tech-chip"
-              onClick={() => handleTechniqueSelect('gel')}
-            >
-              Gel {formatMoney(180)}
-            </button>
-            <button
-              type="button"
-              className="quick-tech-chip"
-              onClick={() => handleTechniqueSelect('rubber')}
-            >
-              Rubber {formatMoney(235)}
-            </button>
-            <button
-              type="button"
-              className="quick-tech-chip is-gold"
-              onClick={() => handleTechniqueSelect('acrylic')}
-            >
-              Acrílico {formatMoney(330)}
-            </button>
-          </div>
-        )}
-
-        {/* Subtle Interactive Hint */}
-        {!hasInteracted && (
-          <div className="liquid-glass-hint" aria-hidden="true">
-            <span>Toca o desliza para interactuar con el cristal líquido</span>
+            {availableTechniques && availableTechniques.length > 0 ? (
+              availableTechniques.slice(0, 3).map((item, idx) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`quick-tech-chip ${idx === 2 ? 'is-gold' : ''}`}
+                  onClick={() => handleTechniqueSelect(item.id)}
+                >
+                  {item.name} {formatMoney(item.price)}
+                </button>
+              ))
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="quick-tech-chip"
+                  onClick={() => handleTechniqueSelect('gel')}
+                >
+                  Gel {formatMoney(180)}
+                </button>
+                <button
+                  type="button"
+                  className="quick-tech-chip"
+                  onClick={() => handleTechniqueSelect('rubber')}
+                >
+                  Rubber {formatMoney(235)}
+                </button>
+                <button
+                  type="button"
+                  className="quick-tech-chip is-gold"
+                  onClick={() => handleTechniqueSelect('acrylic')}
+                >
+                  Acrílico {formatMoney(330)}
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
