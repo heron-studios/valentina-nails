@@ -1,13 +1,21 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { Sparkles, Wand2, Gem } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { Sparkles, Wand2, Gem, ShieldCheck } from 'lucide-react';
 
 export type LiquidGlassHeroProps = {
-  startingPrice: number;
+  currentShape?: string;
+  onSelectShape?: (shapeId: string) => void;
+  currentLength?: string;
+  onSelectLength?: (lengthId: string) => void;
+  currentTechnique?: string;
+  onSelectTechnique?: (techId: string) => void;
+  totalPrice: number;
   formatMoney: (val: number) => string;
-  onExplore: () => void;
+  onStartCustomizing: () => void;
 };
+
+type NailTone = 'rose' | 'glazed' | 'milk' | 'champagne';
 
 const VERTEX_SHADER = `
   attribute vec2 a_position;
@@ -26,7 +34,6 @@ const FRAGMENT_SHADER = `
   uniform float u_intensity;
   varying vec2 v_uv;
 
-  // Hash & Noise for fluid caustics
   float hash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
     p += dot(p, p + 45.32);
@@ -60,54 +67,49 @@ const FRAGMENT_SHADER = `
     vec2 aspect = vec2(u_resolution.x / u_resolution.y, 1.0);
     vec2 uv = v_uv;
 
-    // 1. Fluid liquid-glass coordinate distortion (domain warping)
-    float t = u_time * 0.25;
-    vec2 p = uv * 3.2;
-    vec2 q = vec2(fbm(p + t * 0.4), fbm(p + vec2(5.2, 1.3) - t * 0.3));
-    vec2 r = vec2(fbm(p + 3.0 * q + vec2(1.7, 9.2) + t * 0.35),
-                  fbm(p + 3.0 * q + vec2(8.3, 2.8) - t * 0.25));
-    float caustic = fbm(p + 3.5 * r);
+    // Fluid liquid-glass coordinate distortion
+    float t = u_time * 0.22;
+    vec2 p = uv * 3.4;
+    vec2 q = vec2(fbm(p + t * 0.38), fbm(p + vec2(5.2, 1.3) - t * 0.28));
+    vec2 r = vec2(fbm(p + 3.2 * q + vec2(1.7, 9.2) + t * 0.32),
+                  fbm(p + 3.2 * q + vec2(8.3, 2.8) - t * 0.22));
+    float caustic = fbm(p + 3.6 * r);
 
-    // 2. Interactive ripples from touch/mouse pointer
+    // Interactive ripples from touch/mouse pointer
     vec2 pVec = (uv - u_pointer) * aspect;
     float dist = length(pVec);
-    float wave = sin(dist * 32.0 - u_time * 7.0) * exp(-dist * 5.5) * u_intensity;
-    vec2 waveDisp = (dist > 0.001 ? normalize(pVec) : vec2(0.0)) * wave * 0.08;
+    float wave = sin(dist * 34.0 - u_time * 7.5) * exp(-dist * 5.2) * u_intensity;
+    vec2 waveDisp = (dist > 0.001 ? normalize(pVec) : vec2(0.0)) * wave * 0.1;
 
-    // 3. Apple-style Liquid Glass base gradients: Rose blush, crystal champagne, molten nacre
+    // Apple-style Liquid Glass base gradients: warm nacre, blush & crystal
     vec3 baseGlass = mix(
-      vec3(0.99, 0.97, 0.95), // ultra-clear liquid glass
-      vec3(0.97, 0.92, 0.89), // soft blush milk glass
-      uv.y * 0.8 + caustic * 0.2
+      vec3(0.99, 0.98, 0.96),
+      vec3(0.96, 0.90, 0.86),
+      uv.y * 0.75 + caustic * 0.25
     );
 
-    // Aurora pool highlights in glass
-    vec3 goldCaustic = vec3(0.92, 0.76, 0.48);  // 18k Champagne gold
-    vec3 blushGlow   = vec3(0.95, 0.80, 0.85);  // Delicate rose quartz
-    vec3 crystalPure = vec3(1.00, 1.00, 1.00);  // Diamond specular reflection
+    vec3 goldCaustic = vec3(0.93, 0.76, 0.44); // 18k Champagne gold
+    vec3 blushGlow   = vec3(0.96, 0.78, 0.84); // Rose quartz
+    vec3 crystalPure = vec3(1.00, 1.00, 1.00); // Diamond specular
 
-    // Chromatic refraction (Prismatic dispersion through thick curved glass)
-    float dispR = fbm(p + 3.5 * r + waveDisp * 1.08);
-    float dispG = fbm(p + 3.5 * r + waveDisp * 1.00);
-    float dispB = fbm(p + 3.5 * r + waveDisp * 0.92);
+    // Chromatic refraction
+    float dispR = fbm(p + 3.6 * r + waveDisp * 1.10);
+    float dispG = fbm(p + 3.6 * r + waveDisp * 1.00);
+    float dispB = fbm(p + 3.6 * r + waveDisp * 0.90);
 
-    // Sharp glass caustic light ridges (simulating sunlight passing through liquid glass)
-    float causticEdge = pow(1.0 - abs(dispG * 2.0 - 1.0), 3.5) * 0.85;
-    float causticGold = pow(dispR, 4.0) * 0.65;
-    float causticRose = pow(dispB, 3.2) * 0.45;
+    float causticEdge = pow(1.0 - abs(dispG * 2.0 - 1.0), 3.4) * 0.95;
+    float causticGold = pow(dispR, 3.8) * 0.75;
+    float causticRose = pow(dispB, 3.0) * 0.55;
 
-    // Specular highlight on wave ripples
-    float specRipple = pow(max(0.0, wave * 1.8), 2.8) * u_intensity * 0.9;
+    float specRipple = pow(max(0.0, wave * 1.9), 2.7) * u_intensity * 1.1;
 
-    // Final color composition
     vec3 color = baseGlass;
-    color = mix(color, blushGlow, causticRose * 0.7);
-    color = mix(color, goldCaustic, causticGold * 0.8);
-    color += crystalPure * (causticEdge * 0.4 + specRipple);
+    color = mix(color, blushGlow, causticRose * 0.8);
+    color = mix(color, goldCaustic, causticGold * 0.85);
+    color += crystalPure * (causticEdge * 0.45 + specRipple);
 
-    // Soft glass vignette rim
-    float rim = length((uv - 0.5) * 1.8);
-    color = mix(color, vec3(0.96, 0.91, 0.87), smoothstep(0.7, 1.4, rim) * 0.35);
+    float rim = length((uv - 0.5) * 1.7);
+    color = mix(color, vec3(0.95, 0.88, 0.83), smoothstep(0.65, 1.35, rim) * 0.4);
 
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
   }
@@ -125,14 +127,35 @@ function createShader(gl: WebGLRenderingContext, type: number, source: string) {
   return shader;
 }
 
-export function LiquidGlassHero({ startingPrice, formatMoney, onExplore }: LiquidGlassHeroProps) {
+export function LiquidGlassHero({
+  currentShape = 'almond',
+  onSelectShape,
+  currentLength = 'length-4',
+  onSelectLength,
+  currentTechnique = '',
+  onSelectTechnique,
+  totalPrice,
+  formatMoney,
+  onStartCustomizing,
+}: LiquidGlassHeroProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [selectedShape, setSelectedShape] = useState<'almendra' | 'coffin' | 'stiletto'>('almendra');
+  const [selectedTone, setSelectedTone] = useState<NailTone>('rose');
+  const [localShape, setLocalShape] = useState<string>(currentShape || 'almond');
+  const [localLength, setLocalLength] = useState<string>(currentLength || 'length-4');
   const [hasInteracted, setHasInteracted] = useState(false);
   const [webglSupported, setWebglSupported] = useState(true);
 
-  // WebGL Liquid Glass Engine
+  // Sync external props with local state
+  useEffect(() => {
+    if (currentShape) setLocalShape(currentShape);
+  }, [currentShape]);
+
+  useEffect(() => {
+    if (currentLength) setLocalLength(currentLength);
+  }, [currentLength]);
+
+  // WebGL Liquid Glass Background Engine
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -177,7 +200,6 @@ export function LiquidGlassHero({ startingPrice, formatMoney, onExplore }: Liqui
 
     gl.useProgram(program);
 
-    // Quad
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(
@@ -237,8 +259,8 @@ export function LiquidGlassHero({ startingPrice, formatMoney, onExplore }: Liqui
       const rect = canvas.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return;
       targetPointer.x = (clientX - rect.left) / rect.width;
-      targetPointer.y = 1.0 - (clientY - rect.top) / rect.height; // flip for GL
-      intensity = Math.min(intensity + impulse, 1.3);
+      targetPointer.y = 1.0 - (clientY - rect.top) / rect.height;
+      intensity = Math.min(intensity + impulse, 1.4);
       setHasInteracted(true);
     };
 
@@ -270,10 +292,86 @@ export function LiquidGlassHero({ startingPrice, formatMoney, onExplore }: Liqui
     };
   }, []);
 
-  const handleShapeSelect = useCallback((shape: 'almendra' | 'coffin' | 'stiletto') => {
-    setSelectedShape(shape);
+  // Shape change handler
+  const handleShapeSelect = useCallback((shapeId: string) => {
+    setLocalShape(shapeId);
+    onSelectShape?.(shapeId);
     setHasInteracted(true);
-  }, []);
+  }, [onSelectShape]);
+
+  // Length change handler
+  const handleLengthSelect = useCallback((lengthId: string) => {
+    setLocalLength(lengthId);
+    onSelectLength?.(lengthId);
+    setHasInteracted(true);
+  }, [onSelectLength]);
+
+  // Quick technique handler
+  const handleTechniqueSelect = useCallback((techId: string) => {
+    onSelectTechnique?.(techId);
+    setHasInteracted(true);
+  }, [onSelectTechnique]);
+
+  // Compute tip Y position based on length
+  const tipY = useMemo(() => {
+    if (['length-1', 'length-2'].includes(localLength)) return 66; // Corto
+    if (['length-5', 'length-6', 'length-7', 'length-8'].includes(localLength)) return 14; // Largo
+    return 38; // Medio
+  }, [localLength]);
+
+  // SVG Nail Path calculation according to active shape & length
+  const nailPath = useMemo(() => {
+    const shape = localShape === 'almendra' ? 'almond' : localShape;
+
+    switch (shape) {
+      case 'coffin':
+        return `M36 236 C35 180 43 ${tipY + 44} 54 ${tipY} L106 ${tipY} C117 ${tipY + 44} 125 180 124 236 C105 244 55 244 36 236 Z`;
+      case 'stiletto':
+        return `M36 236 C34 175 32 ${tipY + 70} 80 ${Math.max(8, tipY - 4)} C128 ${tipY + 70} 126 175 124 236 C105 244 55 244 36 236 Z`;
+      case 'square':
+        return `M36 236 L36 ${tipY + 8} C36 ${tipY + 2} 40 ${tipY} 46 ${tipY} L114 ${tipY} C120 ${tipY} 124 ${tipY + 2} 124 ${tipY + 8} L124 236 C105 244 55 244 36 236 Z`;
+      case 'almond':
+      default:
+        return `M36 236 C34 185 30 ${tipY + 60} 80 ${tipY} C130 ${tipY + 60} 126 185 124 236 C105 244 55 244 36 236 Z`;
+    }
+  }, [localShape, tipY]);
+
+  // Nail Gel gradient colors based on selected tone
+  const gelColors = useMemo(() => {
+    switch (selectedTone) {
+      case 'glazed':
+        return {
+          start: '#faf2f8',
+          mid: '#f1dced',
+          end: '#e5c4e0',
+          glint: 'rgba(235, 205, 255, 0.9)',
+        };
+      case 'milk':
+        return {
+          start: '#ffffff',
+          mid: '#fbeff2',
+          end: '#f4dde3',
+          glint: 'rgba(255, 255, 255, 0.95)',
+        };
+      case 'champagne':
+        return {
+          start: '#fffbf0',
+          mid: '#faecd0',
+          end: '#e9d2a4',
+          glint: 'rgba(255, 230, 160, 0.9)',
+        };
+      case 'rose':
+      default:
+        return {
+          start: '#fff0f3',
+          mid: '#f9d5de',
+          end: '#efbac7',
+          glint: 'rgba(255, 255, 255, 0.92)',
+        };
+    }
+  }, [selectedTone]);
+
+  const hasSelectedTechnique = Boolean(currentTechnique);
 
   return (
     <div ref={containerRef} className="liquid-glass-hero" aria-label="Escaparate interactivo de cristal líquido">
@@ -289,128 +387,288 @@ export function LiquidGlassHero({ startingPrice, formatMoney, onExplore }: Liqui
         {/* Top Status Capsule */}
         <div className="liquid-glass-badge">
           <span className="live-dot" />
-          <span>Atelier Exclusivo · Agenda disponible</span>
+          <span>Atelier Exclusivo · Simulador en vivo</span>
         </div>
 
         {/* Central Luxury Nail Glass Display */}
         <div className="liquid-nail-display">
           <div className="nail-silhouette-glass">
-            <svg viewBox="0 0 160 260" fill="none" xmlns="http://www.w3.org/2000/svg" className="nail-svg" aria-hidden="true">
+            <svg
+              viewBox="0 0 160 260"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="nail-svg"
+              aria-hidden="true"
+            >
               <defs>
+                {/* Dynamic Base Gradient */}
                 <linearGradient id="nailGelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#ffedf1" stopOpacity="0.85" />
-                  <stop offset="40%" stopColor="#f7d4dc" stopOpacity="0.92" />
-                  <stop offset="100%" stopColor="#eec1cc" stopOpacity="0.88" />
+                  <stop offset="0%" stopColor={gelColors.start} stopOpacity="0.88" />
+                  <stop offset="42%" stopColor={gelColors.mid} stopOpacity="0.94" />
+                  <stop offset="100%" stopColor={gelColors.end} stopOpacity="0.9" />
                 </linearGradient>
+
+                {/* 18k Metallic Gold Vein Gradient */}
                 <linearGradient id="goldVeinGradient" x1="0%" y1="100%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#d5aa58" />
-                  <stop offset="50%" stopColor="#fdf3db" />
+                  <stop offset="45%" stopColor="#fff2d6" />
+                  <stop offset="70%" stopColor="#deb05a" />
                   <stop offset="100%" stopColor="#b48739" />
                 </linearGradient>
+
+                {/* Lateral 3D Curvature Depth Shading */}
+                <linearGradient id="lateralCurveShade" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#5a2f26" stopOpacity="0.32" />
+                  <stop offset="18%" stopColor="#ffffff" stopOpacity="0.08" />
+                  <stop offset="50%" stopColor="#ffffff" stopOpacity="0.25" />
+                  <stop offset="82%" stopColor="#ffffff" stopOpacity="0.08" />
+                  <stop offset="100%" stopColor="#5a2f26" stopOpacity="0.32" />
+                </linearGradient>
+
+                {/* Glazed Holographic Sheen */}
+                <linearGradient id="glazedShimmer" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#d4b5ff" stopOpacity="0.35" />
+                  <stop offset="50%" stopColor="#ffe6f3" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#a3e7ff" stopOpacity="0.35" />
+                </linearGradient>
+
+                {/* Soft Organic Cuticle Shadow */}
                 <filter id="glassRefract" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="16" stdDeviation="18" floodColor="#4a2820" floodOpacity="0.18" />
+                  <feDropShadow dx="0" dy="14" stdDeviation="16" floodColor="#4a2820" floodOpacity="0.16" />
                 </filter>
+
+                {/* CRITICAL: Vector clip path that strictly bounds all internal veins & glints */}
+                <clipPath id="nailShapeClip">
+                  <path d={nailPath} />
+                </clipPath>
               </defs>
 
-              {/* Dynamic Path depending on selected shape */}
-              {selectedShape === 'almendra' && (
-                <path
-                  d="M36 240 C32 180 24 100 80 18 C136 100 128 180 124 240 Z"
-                  fill="url(#nailGelGradient)"
-                  filter="url(#glassRefract)"
-                  className="nail-path"
-                />
-              )}
-              {selectedShape === 'coffin' && (
-                <path
-                  d="M38 240 L48 50 L112 50 L122 240 Z"
-                  fill="url(#nailGelGradient)"
-                  filter="url(#glassRefract)"
-                  className="nail-path"
-                />
-              )}
-              {selectedShape === 'stiletto' && (
-                <path
-                  d="M36 240 C34 170 30 110 80 8 C130 110 126 170 124 240 Z"
-                  fill="url(#nailGelGradient)"
-                  filter="url(#glassRefract)"
-                  className="nail-path"
-                />
-              )}
-
-              {/* Artisan Golden Foil Vein */}
+              {/* Base Nail Silhouette */}
               <path
-                d="M52 210 C70 170 58 130 92 90 C106 72 110 50 102 34"
-                stroke="url(#goldVeinGradient)"
-                strokeWidth="2.8"
-                strokeLinecap="round"
-                className="gold-foil-vein"
+                d={nailPath}
+                fill="url(#nailGelGradient)"
+                filter="url(#glassRefract)"
+                className="nail-path"
               />
 
-              {/* Gloss shine streak */}
-              <path
-                d="M56 220 C48 160 46 110 76 34"
-                stroke="#ffffff"
-                strokeWidth="2"
-                strokeOpacity="0.65"
-                strokeLinecap="round"
-              />
+              {/* STRICTLY CLIPPED INTERNAL ARTWORK: CANNOT EXTEND OUTSIDE THE NAIL */}
+              <g clipPath="url(#nailShapeClip)">
+                {/* 3D Curvature shading */}
+                <path d={nailPath} fill="url(#lateralCurveShade)" />
+
+                {/* Glazed effect overlay when active */}
+                {selectedTone === 'glazed' && (
+                  <rect x="0" y="0" width="160" height="260" fill="url(#glazedShimmer)" />
+                )}
+
+                {/* Artisan Golden Foil Vein (100% contained inside clip path) */}
+                <path
+                  d="M50 225 C68 180 54 130 92 88 C104 74 108 52 98 26"
+                  stroke="url(#goldVeinGradient)"
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                  className="gold-foil-vein"
+                />
+                <path
+                  d="M66 148 C78 138 84 126 82 110"
+                  stroke="url(#goldVeinGradient)"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  opacity="0.85"
+                />
+
+                {/* Liquid Glass Curved Specular Highlight Streak */}
+                <path
+                  d="M54 220 C46 160 46 110 74 30"
+                  stroke="#ffffff"
+                  strokeWidth="2.2"
+                  strokeOpacity="0.75"
+                  strokeLinecap="round"
+                />
+
+                {/* Cuticle crescent highlight */}
+                <path
+                  d="M44 234 C58 240 102 240 116 234"
+                  stroke="#ffffff"
+                  strokeWidth="1.2"
+                  strokeOpacity="0.45"
+                  strokeLinecap="round"
+                />
+              </g>
             </svg>
 
-            {/* Specular gloss glint */}
-            <div className="nail-glint-orb" />
+            {/* Specular gloss glint orb */}
+            <div
+              className="nail-glint-orb"
+              style={{
+                background: `radial-gradient(circle, ${gelColors.glint} 0%, rgba(255, 255, 255, 0) 75%)`,
+              }}
+            />
           </div>
 
-          {/* Shape Selector Glass Pills */}
+          {/* Tone / Finish Color Swatches */}
+          <div className="glass-swatches-dock" aria-label="Seleccionar acabado de esmalte">
+            <button
+              type="button"
+              className={`glass-swatch-pill ${selectedTone === 'rose' ? 'is-active' : ''}`}
+              onClick={() => setSelectedTone('rose')}
+              title="Nude Rosé"
+              aria-label="Acabado Nude Rosé"
+            >
+              <span className="swatch-circle" style={{ background: 'linear-gradient(135deg, #ffeef2, #f3bcc7)' }} />
+              <small>Rosé</small>
+            </button>
+            <button
+              type="button"
+              className={`glass-swatch-pill ${selectedTone === 'glazed' ? 'is-active' : ''}`}
+              onClick={() => setSelectedTone('glazed')}
+              title="Glazed Pearl"
+              aria-label="Acabado Glazed Pearl con brillo perla"
+            >
+              <span className="swatch-circle" style={{ background: 'linear-gradient(135deg, #f7edff, #dfc4ff)' }} />
+              <small>Glazed</small>
+            </button>
+            <button
+              type="button"
+              className={`glass-swatch-pill ${selectedTone === 'milk' ? 'is-active' : ''}`}
+              onClick={() => setSelectedTone('milk')}
+              title="Cuarzo Milk"
+              aria-label="Acabado Cuarzo Milk francés"
+            >
+              <span className="swatch-circle" style={{ background: 'linear-gradient(135deg, #ffffff, #f7e6eb)' }} />
+              <small>Milk</small>
+            </button>
+            <button
+              type="button"
+              className={`glass-swatch-pill ${selectedTone === 'champagne' ? 'is-active' : ''}`}
+              onClick={() => setSelectedTone('champagne')}
+              title="Oro Champaña"
+              aria-label="Acabado Champaña Gold"
+            >
+              <span className="swatch-circle" style={{ background: 'linear-gradient(135deg, #fff7e4, #e2c086)' }} />
+              <small>Champaña</small>
+            </button>
+          </div>
+
+          {/* Useful Controls: Shape Selector Glass Pills */}
           <div className="glass-shape-selector" aria-label="Elegir punta">
             <button
               type="button"
-              className={`glass-chip ${selectedShape === 'almendra' ? 'is-active' : ''}`}
-              onClick={() => handleShapeSelect('almendra')}
-              aria-pressed={selectedShape === 'almendra'}
+              className={`glass-chip ${(localShape === 'almond' || localShape === 'almendra') ? 'is-active' : ''}`}
+              onClick={() => handleShapeSelect('almond')}
+              aria-pressed={localShape === 'almond' || localShape === 'almendra'}
             >
               <Gem className="w-3.5 h-3.5" /> Almendra
             </button>
             <button
               type="button"
-              className={`glass-chip ${selectedShape === 'coffin' ? 'is-active' : ''}`}
+              className={`glass-chip ${localShape === 'coffin' ? 'is-active' : ''}`}
               onClick={() => handleShapeSelect('coffin')}
-              aria-pressed={selectedShape === 'coffin'}
+              aria-pressed={localShape === 'coffin'}
             >
               <Wand2 className="w-3.5 h-3.5" /> Coffin
             </button>
             <button
               type="button"
-              className={`glass-chip ${selectedShape === 'stiletto' ? 'is-active' : ''}`}
+              className={`glass-chip ${localShape === 'stiletto' ? 'is-active' : ''}`}
               onClick={() => handleShapeSelect('stiletto')}
-              aria-pressed={selectedShape === 'stiletto'}
+              aria-pressed={localShape === 'stiletto'}
             >
               <Sparkles className="w-3.5 h-3.5" /> Stiletto
+            </button>
+            <button
+              type="button"
+              className={`glass-chip ${localShape === 'square' ? 'is-active' : ''}`}
+              onClick={() => handleShapeSelect('square')}
+              aria-pressed={localShape === 'square'}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" /> Cuadrada
+            </button>
+          </div>
+
+          {/* Quick Length Stepper for Real Utility */}
+          <div className="glass-length-row" aria-label="Elegir largo aproximado">
+            <span className="length-label">Largo:</span>
+            <button
+              type="button"
+              className={`glass-length-btn ${['length-1', 'length-2'].includes(localLength) ? 'is-active' : ''}`}
+              onClick={() => handleLengthSelect('length-2')}
+            >
+              Corto
+            </button>
+            <button
+              type="button"
+              className={`glass-length-btn ${['length-3', 'length-4'].includes(localLength) ? 'is-active' : ''}`}
+              onClick={() => handleLengthSelect('length-4')}
+            >
+              Medio
+            </button>
+            <button
+              type="button"
+              className={`glass-length-btn ${['length-5', 'length-6', 'length-7', 'length-8'].includes(localLength) ? 'is-active' : ''}`}
+              onClick={() => handleLengthSelect('length-6')}
+            >
+              Largo
             </button>
           </div>
         </div>
 
-        {/* Bottom Floating Price Dock & CTA */}
+        {/* Bottom Floating Price Dock & CTA: Starts at 0 */}
         <div className="liquid-glass-dock">
           <div className="glass-price-info">
-            <small>Sets de autor</small>
-            <strong>desde {formatMoney(Number.isFinite(startingPrice) ? startingPrice : 22)}</strong>
+            <small>{hasSelectedTechnique ? 'Cotización estimada' : 'Cotización en vivo'}</small>
+            <strong className="price-display">
+              {formatMoney(totalPrice)}
+            </strong>
+            <span className="price-hint">
+              {hasSelectedTechnique
+                ? 'Base y largo incluidos'
+                : 'Comienza en S/ 0 · Elige opciones'}
+            </span>
           </div>
           <button
             type="button"
             className="glass-dock-cta"
-            onClick={onExplore}
-            aria-label="Ir a la calculadora para cotizar tu set"
+            onClick={onStartCustomizing}
+            aria-label="Personalizar este set y continuar"
           >
-            <span>Personalizar</span>
+            <span>{hasSelectedTechnique ? 'Continuar con este set' : 'Personalizar mi set'}</span>
             <Sparkles className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Subtle Hint */}
+        {/* Quick Technique Pill Tray if not yet chosen */}
+        {!hasSelectedTechnique && (
+          <div className="hero-quick-techs" aria-label="Elegir técnica base">
+            <span className="quick-tech-lead">O escoge tu base:</span>
+            <button
+              type="button"
+              className="quick-tech-chip"
+              onClick={() => handleTechniqueSelect('gel')}
+            >
+              Gel S/ 150
+            </button>
+            <button
+              type="button"
+              className="quick-tech-chip"
+              onClick={() => handleTechniqueSelect('rubber')}
+            >
+              Rubber S/ 200
+            </button>
+            <button
+              type="button"
+              className="quick-tech-chip is-gold"
+              onClick={() => handleTechniqueSelect('acrylic')}
+            >
+              Acrílico S/ 280
+            </button>
+          </div>
+        )}
+
+        {/* Subtle Interactive Hint */}
         {!hasInteracted && (
           <div className="liquid-glass-hint" aria-hidden="true">
-            <span>Toca o mueve el cursor para mover el cristal líquido</span>
+            <span>Toca o desliza para interactuar con el cristal líquido</span>
           </div>
         )}
       </div>

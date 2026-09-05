@@ -2,8 +2,8 @@ import type { CatalogItem, TechniqueItem, DecorationItem, SalonCatalog } from '.
 import { formatMoneyPEN } from './format-utils.ts';
 
 export interface CalculateSetPriceParams {
-  technique: TechniqueItem;
-  length?: CatalogItem;
+  technique?: TechniqueItem | null;
+  length?: CatalogItem | null;
   decorations?: Record<string, number>;
   decorationOptions?: DecorationItem[];
   extraTones?: number;
@@ -33,8 +33,8 @@ export function calculateSetPrice(params: CalculateSetPriceParams): number {
     },
   } = params;
 
-  const lengthPrice = technique.usesLengths && length ? length.price : 0;
-  const basePrice = technique.price + lengthPrice;
+  const lengthPrice = technique?.usesLengths && length ? length.price : 0;
+  const basePrice = (technique ? technique.price : 0) + lengthPrice;
 
   const decorationTotal = decorationOptions.reduce(
     (sum, item) => sum + (decorations[item.id] || 0) * item.price,

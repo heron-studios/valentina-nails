@@ -12,7 +12,6 @@ import {
   Heart,
   MessageCircle,
   Minus,
-  Paintbrush,
   Plus,
   RotateCcw,
   ShieldCheck,
@@ -91,9 +90,9 @@ function Counter({ value, onChange, label, max = 10 }: { value: number; onChange
 export default function Home() {
   const [catalog, setCatalog] = useState<SalonCatalog>(() => structuredClone(DEFAULT_CATALOG));
   const [catalogLoading, setCatalogLoading] = useState(true);
-  const [technique, setTechnique] = useState('acrylic');
+  const [technique, setTechnique] = useState('');
   const [length, setLength] = useState('length-4');
-  const [shape, setShape] = useState('stiletto');
+  const [shape, setShape] = useState('almond');
   const [decorations, setDecorations] = useState<Record<string, number>>({});
   const [extraTones, setExtraTones] = useState(0);
   const [changeShape, setChangeShape] = useState(false);
@@ -124,12 +123,9 @@ export default function Home() {
   const lengths = catalog.lengths.filter((item) => item.active);
   const shapes = catalog.shapes.filter((item) => item.active);
   const decorationOptions = catalog.decorations.filter((item) => item.active);
-  const techniqueInfo = techniques.find((item) => item.id === technique) || techniques[0] || DEFAULT_CATALOG.techniques[0];
+  const techniqueInfo = techniques.find((item) => item.id === technique) || null;
   const lengthInfo = lengths.find((item) => item.id === length) || lengths[0] || DEFAULT_CATALOG.lengths[0];
   const shapeInfo = shapes.find((item) => item.id === shape) || shapes[0] || DEFAULT_CATALOG.shapes[0];
-  const startingPrice = Math.min(
-    ...techniques.map((item) => getTechniqueStartingPrice(item, lengths)),
-  );
 
   const customTotal = useMemo(() => calculateSetPrice({
     technique: techniqueInfo,
@@ -146,18 +142,20 @@ export default function Home() {
   const total = selectedDesign?.price ?? customTotal;
 
   const selectedDecorations = decorationOptions.filter((item) => (decorations[item.id] || 0) > 0);
-  const lengthSupplement = techniqueInfo.usesLengths && lengthInfo.price > 0 ? ` (+${formatMoney(lengthInfo.price)})` : '';
-  const customSummary = [
-    `${techniqueInfo.name}${techniqueInfo.usesLengths ? ` · ${lengthInfo.name.toLowerCase()}${lengthSupplement}` : ''}`,
-    `Forma ${shapeInfo.name}`,
-    ...selectedDecorations.map((item) => `${item.name} ×${decorations[item.id]} uña${decorations[item.id] > 1 ? 's' : ''}`),
-    ...(extraTones ? [`${extraTones} tono${extraTones > 1 ? 's' : ''} extra`] : []),
-    ...(changeShape ? ['Cambio de forma'] : []),
-    ...(removal.acrylic ? [`Retiro acrílico ×${removal.acrylic}`] : []),
-    ...(removal.gel ? [`Retiro gel ×${removal.gel}`] : []),
-    ...(repairs.acrylic ? [`Reposición acrílico ×${repairs.acrylic}`] : []),
-    ...(repairs.gel ? [`Reposición gel ×${repairs.gel}`] : []),
-  ];
+  const lengthSupplement = techniqueInfo?.usesLengths && lengthInfo.price > 0 ? ` (+${formatMoney(lengthInfo.price)})` : '';
+  const customSummary = techniqueInfo
+    ? [
+        `${techniqueInfo.name}${techniqueInfo.usesLengths ? ` · ${lengthInfo.name.toLowerCase()}${lengthSupplement}` : ''}`,
+        `Forma ${shapeInfo.name}`,
+        ...selectedDecorations.map((item) => `${item.name} ×${decorations[item.id]} uña${decorations[item.id] > 1 ? 's' : ''}`),
+        ...(extraTones ? [`${extraTones} tono${extraTones > 1 ? 's' : ''} extra`] : []),
+        ...(changeShape ? ['Cambio de forma'] : []),
+        ...(removal.acrylic ? [`Retiro acrílico ×${removal.acrylic}`] : []),
+        ...(removal.gel ? [`Retiro gel ×${removal.gel}`] : []),
+        ...(repairs.acrylic ? [`Reposición acrílico ×${repairs.acrylic}`] : []),
+        ...(repairs.gel ? [`Reposición gel ×${repairs.gel}`] : []),
+      ]
+    : ['Elige tu técnica para iniciar tu diseño'];
   const summary = selectedDesign
     ? [`Diseño para replicar: ${selectedDesign.title}`, selectedDesign.description || 'Referencia visual seleccionada']
     : customSummary;
@@ -290,9 +288,9 @@ export default function Home() {
   }, [occupied, selectedTime]);
 
   const reset = () => {
-    setTechnique(techniques[0]?.id || 'acrylic');
+    setTechnique('');
     setLength(lengths[0]?.id || 'length-1');
-    setShape(shapes[0]?.id || 'stiletto');
+    setShape(shapes[0]?.id || 'almond');
     setDecorations({});
     setExtraTones(0);
     setChangeShape(false);
@@ -310,6 +308,12 @@ export default function Home() {
   };
 
   const goToBooking = () => {
+    if (!technique && !selectedDesign) {
+      setError('Por favor elige una técnica base (Acrílico, Gel o Rubber) antes de continuar con tu cita.');
+      document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    setError('');
     setStage('booking');
     setTimeout(() => document.querySelector('#booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
@@ -453,9 +457,15 @@ export default function Home() {
           </div>
 
           <LiquidGlassHero
-            startingPrice={startingPrice}
+            currentShape={shape}
+            onSelectShape={(newShape) => setShape(newShape)}
+            currentLength={length}
+            onSelectLength={(newLength) => setLength(newLength)}
+            currentTechnique={technique}
+            onSelectTechnique={(newTech) => setTechnique(newTech)}
+            totalPrice={total}
             formatMoney={formatMoney}
-            onExplore={() => {
+            onStartCustomizing={() => {
               document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' });
             }}
           />
@@ -478,14 +488,18 @@ export default function Home() {
             </div>
           </div>
           <div className="design-carousel" ref={galleryRef}>
-            {designExamples.map((design) => (
-              <article className="design-example" key={design.id}>
-                <div className="design-example-photo"><img src={design.imageData} alt={design.title} loading="lazy" /></div>
-                <div className="design-example-copy">
-                  <span>Diseño listo · {formatMoney(design.price)}</span>
-                  <h3>{design.title}</h3>
-                  <p>{design.description}</p>
-                  <Button onClick={() => replicateDesign(design)}>Quiero replicar este diseño <ArrowRight /></Button>
+            {designExamples.map((item) => (
+              <article key={item.id} className="design-card">
+                <img src={item.imageData} alt={item.title} loading="lazy" />
+                <div className="design-card-content">
+                  <div className="design-card-header">
+                    <h3>{item.title}</h3>
+                    <span className="design-tag">{formatMoney(item.price)}</span>
+                  </div>
+                  <p>{item.description || 'Set de catálogo listo para replicar con técnica y acabado profesional.'}</p>
+                  <button type="button" className="gold-button w-full justify-center" onClick={() => replicateDesign(item)}>
+                    Replicar este set <ArrowRight />
+                  </button>
                 </div>
               </article>
             ))}
@@ -520,7 +534,7 @@ export default function Home() {
               </div>
             </div>
 
-            {techniqueInfo.usesLengths && (
+            {techniqueInfo?.usesLengths && (
               <div className="step-card">
                 <div className="step-title"><span>02</span><div><h3>Define el largo</h3><p>Del natural al extra largo.</p></div></div>
                 <div className="length-grid">
@@ -542,7 +556,7 @@ export default function Home() {
             )}
 
             <div className="step-card">
-              <div className="step-title"><span>{techniqueInfo.usesLengths ? '03' : '02'}</span><div><h3>Elige la forma</h3><p>Una silueta que hable de ti.</p></div></div>
+              <div className="step-title"><span>{techniqueInfo?.usesLengths ? '03' : '02'}</span><div><h3>Elige la forma</h3><p>Una silueta que hable de ti.</p></div></div>
               <div className="shape-grid" data-tour="shape">
                 {shapes.map((item) => (
                   <button key={item.id} type="button" className={shape === item.id ? 'selected' : ''} onClick={() => setShape(item.id)} aria-pressed={shape === item.id}>
@@ -553,7 +567,7 @@ export default function Home() {
             </div>
 
             <div className="step-card">
-              <div className="step-title"><span>{techniqueInfo.usesLengths ? '04' : '03'}</span><div><h3>Agrega decoraciones</h3><p>Selecciona cuántas uñas llevarán cada diseño.</p></div></div>
+              <div className="step-title"><span>{techniqueInfo?.usesLengths ? '04' : '03'}</span><div><h3>Agrega decoraciones</h3><p>Selecciona cuántas uñas llevarán cada diseño.</p></div></div>
               <div className="decoration-grid" data-tour="decorations">
                 {decorationOptions.slice(0, showAll ? decorationOptions.length : 10).map((item) => (
                   <div className={`decoration-row ${(decorations[item.id] || 0) > 0 ? 'selected' : ''}`} key={item.id}>
@@ -569,14 +583,12 @@ export default function Home() {
             </div>
 
             <div className="step-card">
-              <div className="step-title"><span>{techniqueInfo.usesLengths ? '05' : '04'}</span><div><h3>Últimos detalles</h3><p>Personaliza tonos, retiro y reposiciones.</p></div></div>
-              <div className="extras-grid">
-                <div className="extra-control"><span><Paintbrush /><span><strong>Tonos extra</strong><small>2 tonos lisos incluidos · +{formatMoney(catalog.extras.extraTone)} c/u</small></span></span><Counter label="tono extra" value={extraTones} onChange={setExtraTones} max={8} /></div>
-                <button className={`extra-toggle ${changeShape ? 'selected' : ''}`} type="button" onClick={() => setChangeShape((value) => !value)} aria-pressed={changeShape}>
-                  <span><RotateCcw /><span><strong>Cambio de forma</strong><small>Precio único</small></span></span><b>+{formatMoney(catalog.extras.changeShape)}</b>{changeShape && <Check />}
-                </button>
-                <div className="extra-control"><span><Trash2 /><span><strong>Retiro acrílico</strong><small>{formatMoney(catalog.extras.removalAcrylic)} por uña</small></span></span><Counter label="retiro acrílico" value={removal.acrylic} onChange={(value) => setRemoval((current) => ({ ...current, acrylic: value }))} /></div>
-                <div className="extra-control"><span><Trash2 /><span><strong>Retiro gel semi</strong><small>{formatMoney(catalog.extras.removalGel)} por uña</small></span></span><Counter label="retiro gel" value={removal.gel} onChange={(value) => setRemoval((current) => ({ ...current, gel: value }))} /></div>
+              <div className="step-title"><span>{techniqueInfo?.usesLengths ? '05' : '04'}</span><div><h3>Últimos detalles</h3><p>Personaliza tonos, retiro y reposiciones.</p></div></div>
+              <div className="extras-grid" data-tour="extras">
+                <div className="extra-control"><span><WandSparkles /><span><strong>Tonos lisos extra</strong><small>2 tonos incluidos · {formatMoney(catalog.extras.extraTone)} por tono adicional</small></span></span><Counter label="tonos extra" value={extraTones} onChange={setExtraTones} /></div>
+                <div className="extra-control"><span><Sparkles /><span><strong>Cambio de forma</strong><small>{formatMoney(catalog.extras.changeShape)} por set</small></span></span><button type="button" className={`toggle-pill ${changeShape ? 'active' : ''}`} onClick={() => setChangeShape((value) => !value)} aria-pressed={changeShape}>{changeShape ? 'Incluido' : 'No'}</button></div>
+                <div className="extra-control"><span><Sparkles /><span><strong>Retiro acrílico</strong><small>{formatMoney(catalog.extras.removalAcrylic)} por uña</small></span></span><Counter label="retiro acrílico" value={removal.acrylic} onChange={(value) => setRemoval((current) => ({ ...current, acrylic: value }))} /></div>
+                <div className="extra-control"><span><Sparkles /><span><strong>Retiro gel</strong><small>{formatMoney(catalog.extras.removalGel)} por uña</small></span></span><Counter label="retiro gel" value={removal.gel} onChange={(value) => setRemoval((current) => ({ ...current, gel: value }))} /></div>
                 <div className="extra-control"><span><WandSparkles /><span><strong>Reposición acrílico</strong><small>{formatMoney(catalog.extras.repairAcrylic)} por uña</small></span></span><Counter label="reposición acrílico" value={repairs.acrylic} onChange={(value) => setRepairs((current) => ({ ...current, acrylic: value }))} /></div>
                 <div className="extra-control"><span><WandSparkles /><span><strong>Reposición gel</strong><small>{formatMoney(catalog.extras.repairGel)} por uña</small></span></span><Counter label="reposición gel" value={repairs.gel} onChange={(value) => setRepairs((current) => ({ ...current, gel: value }))} /></div>
               </div>
@@ -589,14 +601,22 @@ export default function Home() {
             <div className="summary-preview">
               <span
                 className={`nail-shape ${shapeInfo.className} ${
-                  techniqueInfo.usesLengths ? getNailLengthClass(length, lengths) : 'len-3'
+                  techniqueInfo?.usesLengths ? getNailLengthClass(length, lengths) : 'len-3'
                 }`}
               />
               <Sparkles />
             </div>
             <ul>{summary.map((item) => <li key={item}><Check />{item}</li>)}</ul>
-            <div className="summary-total"><span>Precio estimado<small>Soles · sujeto a valoración</small></span><strong>{formatMoney(total)}</strong></div>
-            <Button className="summary-cta" onClick={goToBooking}>Elegir fecha <ArrowRight /></Button>
+            <div className="summary-total">
+              <span>
+                Precio estimado
+                <small>{technique ? 'Soles · sujeto a valoración' : 'Comienza en S/ 0'}</small>
+              </span>
+              <strong>{formatMoney(total)}</strong>
+            </div>
+            <Button className="summary-cta" onClick={goToBooking}>
+              {technique || selectedDesign ? <>Elegir fecha <ArrowRight /></> : <>Elegir técnica <ArrowRight /></>}
+            </Button>
             <button
               type="button"
               className={`copy-quote-button ${copiedQuote ? 'copied' : ''}`}

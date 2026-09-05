@@ -44,6 +44,24 @@ test('calculateSetPrice adds technique base price and length price when usesLeng
   assert.equal(total, 45);
 });
 
+test('calculateSetPrice returns 0 when no technique is selected and no extras', () => {
+  const total = calculateSetPrice({
+    technique: null,
+  });
+
+  assert.equal(total, 0);
+});
+
+test('calculateSetPrice adds only extras/decorations when technique is not yet selected', () => {
+  const total = calculateSetPrice({
+    technique: null,
+    decorations: { 'crystal-s': 1 },
+    decorationOptions: [{ id: 'crystal-s', name: 'Cristales CH', price: 10, icon: '◆', active: true }],
+  });
+
+  assert.equal(total, 10);
+});
+
 test('calculateSetPrice ignores length price when technique usesLengths is false', () => {
   const selectedLength = mockLengths[2];
   const total = calculateSetPrice({
