@@ -70,6 +70,13 @@ const TOUR_STEPS = [
   { selector: '[data-tour="confirm"]', title: 'Confirma por WhatsApp', copy: 'Guardaremos el horario y abriremos WhatsApp con tu diseño, fecha, hora y total listos para enviar.', tip: 'Revisa el mensaje y envíalo para terminar.' },
 ] as const;
 
+const CALC_STEPS = [
+  { id: 'technique', label: 'Técnica', num: '01' },
+  { id: 'shape', label: 'Silueta & Largo', num: '02' },
+  { id: 'decorations', label: 'Diseños', num: '03' },
+  { id: 'extras', label: 'Extras', num: '04' },
+] as const;
+
 const dateKey = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -107,6 +114,7 @@ export default function Home() {
   const [repairs, setRepairs] = useState({ acrylic: 0, gel: 0 });
   const [showAll, setShowAll] = useState(false);
   const [stage, setStage] = useState<'design' | 'booking'>('design');
+  const [calcStepIndex, setCalcStepIndex] = useState(0);
 
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
@@ -335,6 +343,10 @@ export default function Home() {
       setActiveTab('booking');
       setStage('booking');
     }
+    if (wizardStep === 1) setCalcStepIndex(0);
+    if (wizardStep === 2) setCalcStepIndex(1);
+    if (wizardStep === 3) setCalcStepIndex(2);
+    if (wizardStep === 4) setCalcStepIndex(3);
   }, [wizardStep, activeTab]);
 
   useEffect(() => {
@@ -690,93 +702,88 @@ export default function Home() {
         {/* TAB 3: EXPERIENCIA */}
         {activeTab === 'experiencia' && (
           <div className="tab-view-container">
-            <section id="experiencia" className="px-5 py-12 sm:px-10 lg:px-16 max-w-7xl mx-auto flex-1">
-              <div className="section-heading text-center max-w-3xl mx-auto mb-12">
-                <p className="eyebrow">Experiencia Atelier</p>
-                <h2>El lujo está en los detalles</h2>
-                <p>Una experiencia creada para que cada elección se sienta personal, impecable y segura.</p>
+            <section id="experiencia" className="px-4 py-3 sm:px-8 sm:py-4 lg:px-12 max-w-7xl mx-auto flex-1 w-full flex flex-col justify-between overflow-hidden">
+              <div className="section-heading text-center max-w-2xl mx-auto mb-2 flex-shrink-0">
+                <p className="eyebrow text-xs">Experiencia Atelier</p>
+                <h2 className="text-xl sm:text-2xl font-display font-medium text-[#2d221e] mt-0.5">El lujo está en los detalles</h2>
+                <p className="text-xs text-[#685c56] mt-0.5">Una experiencia creada para que cada elección se sienta personal, impecable y segura.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <div className="experience-feature-card">
-                  <div className="experience-icon-badge"><Sparkles /></div>
-                  <h3>Diseño Personalizado</h3>
-                  <p>Cada set es una obra única. Selecciona técnica, largo milimétrico, curvatura y decoraciones exclusivas.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 my-auto">
+                <div className="experience-feature-card py-3 px-3.5">
+                  <div className="experience-icon-badge mb-1.5"><Sparkles className="w-3.5 h-3.5" /></div>
+                  <h3 className="text-sm font-semibold mb-1">Diseño Personalizado</h3>
+                  <p className="text-[0.72rem] leading-relaxed">Cada set es una obra única. Selecciona técnica, largo milimétrico, curvatura y decoraciones exclusivas.</p>
                 </div>
-                <div className="experience-feature-card">
-                  <div className="experience-icon-badge"><ShieldCheck /></div>
-                  <h3>Bioseguridad Total</h3>
-                  <p>Herramientas esterilizadas bajo normas estrictas, insumos descartables por clienta y ambiente seguro.</p>
+                <div className="experience-feature-card py-3 px-3.5">
+                  <div className="experience-icon-badge mb-1.5"><ShieldCheck className="w-3.5 h-3.5" /></div>
+                  <h3 className="text-sm font-semibold mb-1">Bioseguridad Total</h3>
+                  <p className="text-[0.72rem] leading-relaxed">Herramientas esterilizadas bajo normas estrictas, insumos descartables por clienta y ambiente seguro.</p>
                 </div>
-                <div className="experience-feature-card">
-                  <div className="experience-icon-badge"><Heart /></div>
-                  <h3>Manicura Rusa</h3>
-                  <p>Tratamiento profundo de cutículas y nivelación anatómica para un acabado limpio que dura hasta 4 semanas.</p>
+                <div className="experience-feature-card py-3 px-3.5">
+                  <div className="experience-icon-badge mb-1.5"><Heart className="w-3.5 h-3.5" /></div>
+                  <h3 className="text-sm font-semibold mb-1">Manicura Rusa</h3>
+                  <p className="text-[0.72rem] leading-relaxed">Tratamiento profundo de cutículas y nivelación anatómica para un acabado limpio que dura hasta 4 semanas.</p>
                 </div>
-                <div className="experience-feature-card">
-                  <div className="experience-icon-badge"><Clock3 /></div>
-                  <h3>Agenda en Vivo</h3>
-                  <p>Citas exclusivas sin esperas ni sobrecupos. Selecciona tu horario disponible y confirma por WhatsApp.</p>
+                <div className="experience-feature-card py-3 px-3.5">
+                  <div className="experience-icon-badge mb-1.5"><Clock3 className="w-3.5 h-3.5" /></div>
+                  <h3 className="text-sm font-semibold mb-1">Agenda en Vivo</h3>
+                  <p className="text-[0.72rem] leading-relaxed">Citas exclusivas sin esperas ni sobrecupos. Selecciona tu horario disponible y confirma por WhatsApp.</p>
                 </div>
               </div>
 
-              <div className="experience-strip mb-12">
-                <div><Sparkles /><span><strong>Diseño personalizado</strong>Elige cada detalle de tu set</span></div>
-                <div><ShieldCheck /><span><strong>Precio transparente</strong>Sin sorpresas al reservar</span></div>
-                <div><CalendarDays /><span><strong>Agenda simple</strong>Tu horario en pocos pasos</span></div>
-              </div>
-
-              <div className="closing-section mb-10">
-                <div><p className="eyebrow">{catalog.businessName}</p><h2>El lujo está<br />en los detalles.</h2></div>
-                <div className="closing-note"><span>✿</span><p>Una experiencia creada para que cada elección se sienta personal, clara y especial.</p></div>
-              </div>
-
-              <div className="flex flex-wrap justify-center gap-4 py-4">
-                <button type="button" className="gold-button" onClick={() => handleTabChange('calculadora')}>
-                  Cotizar mi set en la calculadora <ArrowRight />
+              <div className="flex flex-wrap justify-center gap-3 py-2 flex-shrink-0">
+                <button type="button" className="gold-button text-xs py-2 px-4" onClick={() => handleTabChange('calculadora')}>
+                  Cotizar mi set en la calculadora <ArrowRight className="w-3.5 h-3.5" />
                 </button>
-                <button type="button" className="soft-button" onClick={() => handleTabChange('disponibilidad')}>
-                  <CalendarDays /> Ver disponibilidad en agenda
+                <button type="button" className="soft-button text-xs py-2 px-4" onClick={() => handleTabChange('disponibilidad')}>
+                  <CalendarDays className="w-3.5 h-3.5" /> Ver disponibilidad en agenda
                 </button>
+              </div>
+
+              <div className="flex items-center justify-between text-[0.68rem] text-[#8c7b74] pt-2 border-t border-[#ebd8ce]/50 flex-shrink-0">
+                <span>Lunes a viernes · {catalog.schedule.weekdays.join(', ')} · Sábado · {catalog.schedule.saturday.join(', ')}</span>
+                <a className="text-[#94671e] hover:underline font-medium inline-flex items-center gap-1" href={`https://wa.me/${catalog.whatsapp}`}>
+                  <MessageCircle className="w-3 h-3" /> WhatsApp
+                </a>
               </div>
             </section>
-
-            <footer>
-              <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
-              <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
-            </footer>
           </div>
         )}
 
         {/* TAB 3: GALERIA */}
         {activeTab === 'galeria' && (
           <div className="tab-view-container">
-            <section id="galeria" className="inspiration-section px-5 py-12 sm:px-10 lg:px-16 max-w-7xl mx-auto flex-1" aria-labelledby="inspiration-title">
-              <div className="inspiration-heading">
-                <div><p className="eyebrow">Trabajos realizados</p><h2 id="inspiration-title">Elige uno y lo replicamos</h2><p>¿No quieres configurar cada detalle? Escoge una referencia, reserva y listo.</p></div>
-                <div className="carousel-controls">
-                  <button type="button" aria-label="Ver diseños anteriores" onClick={() => galleryRef.current?.scrollBy({ left: -360, behavior: 'smooth' })}><ChevronLeft /></button>
-                  <button type="button" aria-label="Ver más diseños" onClick={() => galleryRef.current?.scrollBy({ left: 360, behavior: 'smooth' })}><ChevronRight /></button>
+            <section id="galeria" className="inspiration-section px-4 py-3 sm:px-8 sm:py-4 lg:px-12 max-w-7xl mx-auto flex-1 w-full flex flex-col justify-between overflow-hidden" aria-labelledby="inspiration-title">
+              <div className="inspiration-heading flex items-center justify-between pb-2 border-b border-[#ebd8ce]/60 flex-shrink-0">
+                <div>
+                  <p className="eyebrow text-xs">Trabajos realizados</p>
+                  <h2 id="inspiration-title" className="text-xl sm:text-2xl font-display font-medium text-[#2d221e] mt-0.5">Elige uno y lo replicamos</h2>
+                  <p className="text-xs text-[#685c56] mt-0.5">¿No quieres configurar cada detalle? Escoge una referencia, reserva y listo.</p>
+                </div>
+                <div className="carousel-controls flex-shrink-0">
+                  <button type="button" aria-label="Ver diseños anteriores" onClick={() => galleryRef.current?.scrollBy({ left: -320, behavior: 'smooth' })}><ChevronLeft className="w-4 h-4" /></button>
+                  <button type="button" aria-label="Ver más diseños" onClick={() => galleryRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}><ChevronRight className="w-4 h-4" /></button>
                 </div>
               </div>
               {designExamples.length > 0 ? (
-                <div className="design-carousel" ref={galleryRef}>
+                <div className="design-carousel flex-1 my-auto items-center py-2" ref={galleryRef}>
                   {designExamples.map((item) => {
                     const anchorPrice = getAnchorPrice(item.price);
                     return (
-                      <article key={item.id} className="design-card">
-                        <img src={item.imageData} alt={item.title} loading="lazy" />
-                        <div className="design-card-content">
-                          <div className="design-card-header">
-                            <h3>{item.title}</h3>
+                      <article key={item.id} className="design-card max-h-[380px]">
+                        <img src={item.imageData} alt={item.title} loading="lazy" className="h-44 object-cover" />
+                        <div className="design-card-content p-3.5">
+                          <div className="design-card-header mb-1.5">
+                            <h3 className="text-sm">{item.title}</h3>
                             <div className="flex flex-col items-end">
-                              <span className="line-through text-xs text-[#9c8a82]">{formatMoney(anchorPrice)}</span>
-                              <span className="design-tag">{formatMoney(item.price)}</span>
+                              <span className="line-through text-[0.65rem] text-[#9c8a82]">{formatMoney(anchorPrice)}</span>
+                              <span className="design-tag text-xs">{formatMoney(item.price)}</span>
                             </div>
                           </div>
-                          <p>{item.description || 'Set de catálogo listo para replicar con técnica y acabado profesional.'}</p>
-                          <button type="button" className="gold-button w-full justify-center" onClick={() => replicateDesign(item)}>
-                            Replicar este set <ArrowRight />
+                          <p className="text-[0.72rem] line-clamp-2 mb-2">{item.description || 'Set de catálogo listo para replicar con técnica profesional.'}</p>
+                          <button type="button" className="gold-button w-full justify-center text-xs py-1.5" onClick={() => replicateDesign(item)}>
+                            Replicar este set <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </article>
@@ -784,251 +791,580 @@ export default function Home() {
                   })}
                 </div>
               ) : (
-                <p className="text-center py-12 text-[#8c7a72]">No hay diseños cargados en este momento.</p>
+                <p className="text-center py-8 text-[#8c7a72] my-auto">No hay diseños cargados en este momento.</p>
               )}
-            </section>
 
-            <footer>
-              <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
-              <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
-            </footer>
+              <div className="flex items-center justify-between text-[0.68rem] text-[#8c7b74] pt-2 border-t border-[#ebd8ce]/50 flex-shrink-0">
+                <span>Lunes a viernes · {catalog.schedule.weekdays.join(', ')} · Sábado · {catalog.schedule.saturday.join(', ')}</span>
+                <a className="text-[#94671e] hover:underline font-medium inline-flex items-center gap-1" href={`https://wa.me/${catalog.whatsapp}`}>
+                  <MessageCircle className="w-3 h-3" /> WhatsApp
+                </a>
+              </div>
+            </section>
           </div>
         )}
 
         {/* TAB 4: CALCULADORA */}
         {activeTab === 'calculadora' && (
           <div className="tab-view-container">
-            <section id="calculadora" className="builder-section flex-1">
-        <div className="section-heading" data-tour="intro">
-          <p className="eyebrow">Tu set, a tu manera</p>
-          <h2>Diseña y cotiza</h2>
-          <p>Combina técnica, forma y decoraciones. El precio se actualiza en cada elección.</p>
-        </div>
-
-        <div className="builder-layout">
-          <div className="builder-main">
-            <div className="step-card">
-              <div className="step-title"><span>01</span><div><h3>Elige tu técnica</h3><p>La base perfecta para tu estilo.</p></div></div>
-              <div className="technique-grid" data-tour="technique">
-                {displayTechniques.map((item) => (
-                  <button key={item.id} type="button" className={`technique-card ${technique === item.id ? 'selected' : ''}`} onClick={() => setTechnique(item.id)} aria-pressed={technique === item.id}>
-                    <span className="technique-icon">{item.id === 'acrylic' ? <Gem /> : item.id === 'gel' ? <Heart /> : <Sparkles />}</span>
-                    <span><strong>{item.name}</strong><small>{item.note}</small></span>
-                    <span className="technique-price">
-                      {item.usesLengths && displayLengths.length
-                        ? `desde ${formatMoney(getTechniqueStartingPrice(item, displayLengths))}`
-                        : formatMoney(item.price)}
-                    </span>
-                    {technique === item.id && <span className="selected-check"><Check /></span>}
+            <section id="calculadora" className="px-4 py-3 sm:px-8 sm:py-3 lg:px-12 max-w-7xl mx-auto flex-1 w-full flex flex-col justify-between overflow-hidden">
+              {/* Step Navigation Bar */}
+              <div className="calc-step-nav flex-shrink-0" role="tablist" aria-label="Pasos de personalización">
+                {CALC_STEPS.map((step, idx) => (
+                  <button
+                    key={step.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={calcStepIndex === idx}
+                    className={`calc-step-tab ${calcStepIndex === idx ? 'active' : ''}`}
+                    onClick={() => setCalcStepIndex(idx)}
+                  >
+                    <span className="step-num">{step.num}</span>
+                    <span>{step.label}</span>
                   </button>
                 ))}
               </div>
-            </div>
 
-            {techniqueInfo?.usesLengths && (
-              <div className="step-card">
-                <div className="step-title"><span>02</span><div><h3>Define el largo</h3><p>Del natural al extra largo.</p></div></div>
-                <div className="length-grid">
-                  {displayLengths.map((item, index) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={length === item.id ? 'selected' : ''}
-                      onClick={() => setLength(item.id)}
-                      aria-pressed={length === item.id}
-                    >
-                      <span className="length-line" style={{ height: `${18 + index * 3}px` }} />
-                      <strong>{item.name}</strong>
-                      <small>{formatLengthSupplement(item.price)}</small>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+              {/* Main Studio: Active Step Workspace on Left, Summary Card on Right */}
+              <div className="calc-studio-layout flex-1 min-h-0">
+                {/* Left Workspace Panel */}
+                <div className="calc-workspace-panel" data-tour="intro">
+                  <div className="calc-step-body">
+                    {/* STEP 1: TECNICA */}
+                    {calcStepIndex === 0 && (
+                      <div>
+                        <div className="mb-3">
+                          <h3 className="text-base font-semibold text-[#281f1c]">Elige tu técnica base</h3>
+                          <p className="text-xs text-[#6a5c55]">La base perfecta para tu estilo y duración deseada.</p>
+                        </div>
+                        <div className="technique-grid" data-tour="technique">
+                          {displayTechniques.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className={`technique-card ${technique === item.id ? 'selected' : ''}`}
+                              onClick={() => setTechnique(item.id)}
+                              aria-pressed={technique === item.id}
+                            >
+                              <span className="technique-icon">
+                                {item.id === 'acrylic' ? <Gem /> : item.id === 'gel' ? <Heart /> : <Sparkles />}
+                              </span>
+                              <span>
+                                <strong>{item.name}</strong>
+                                <small>{item.note}</small>
+                              </span>
+                              <span className="technique-price">
+                                {item.usesLengths && displayLengths.length
+                                  ? `desde ${formatMoney(getTechniqueStartingPrice(item, displayLengths))}`
+                                  : formatMoney(item.price)}
+                              </span>
+                              {technique === item.id && <span className="selected-check"><Check /></span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-            <div className="step-card">
-              <div className="step-title"><span>{techniqueInfo?.usesLengths ? '03' : '02'}</span><div><h3>Elige la forma</h3><p>Una silueta que hable de ti.</p></div></div>
-              <div className="shape-grid" data-tour="shape">
-                {shapes.map((item) => (
-                  <button key={item.id} type="button" className={shape === item.id ? 'selected' : ''} onClick={() => setShape(item.id)} aria-pressed={shape === item.id}>
-                    <span className={`nail-shape ${item.className}`} /><strong>{item.name}</strong>{shape === item.id && <Check />}
-                  </button>
-                ))}
-              </div>
-            </div>
+                    {/* STEP 2: SILUETA Y LARGO */}
+                    {calcStepIndex === 1 && (
+                      <div>
+                        <div className="mb-3">
+                          <h3 className="text-base font-semibold text-[#281f1c]">Silueta anatómica y largo</h3>
+                          <p className="text-xs text-[#6a5c55]">Compara las formas y define la extensión de tus uñas.</p>
+                        </div>
 
-            <div className="step-card">
-              <div className="step-title"><span>{techniqueInfo?.usesLengths ? '04' : '03'}</span><div><h3>Agrega decoraciones</h3><p>Selecciona cuántas uñas llevarán cada diseño.</p></div></div>
-              <div className="decoration-grid" data-tour="decorations">
-                {displayDecorations.slice(0, showAll ? displayDecorations.length : 10).map((item) => (
-                  <div className={`decoration-row ${(decorations[item.id] || 0) > 0 ? 'selected' : ''}`} key={item.id}>
-                    <span className="decor-icon">{item.icon}</span>
-                    <span className="decor-name"><strong>{item.name}</strong><small>{formatMoney(item.price)} / uña</small></span>
-                    <Counter label={item.name} value={decorations[item.id] || 0} onChange={(value) => setDecorations((current) => ({ ...current, [item.id]: value }))} />
+                        {techniqueInfo?.usesLengths && (
+                          <div className="mb-4">
+                            <h4 className="text-xs font-semibold text-[#7a5925] uppercase tracking-wider mb-2">
+                              Largo milimétrico
+                            </h4>
+                            <div className="length-grid">
+                              {displayLengths.map((item, index) => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  className={length === item.id ? 'selected' : ''}
+                                  onClick={() => setLength(item.id)}
+                                  aria-pressed={length === item.id}
+                                >
+                                  <span className="length-line" style={{ height: `${16 + index * 3}px` }} />
+                                  <strong>{item.name}</strong>
+                                  <small>{formatLengthSupplement(item.price)}</small>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <h4 className="text-xs font-semibold text-[#7a5925] uppercase tracking-wider mb-2">
+                            Forma de uña
+                          </h4>
+                          <div className="shape-grid" data-tour="shape">
+                            {shapes.map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                className={shape === item.id ? 'selected' : ''}
+                                onClick={() => setShape(item.id)}
+                                aria-pressed={shape === item.id}
+                              >
+                                <span className={`nail-shape ${item.className}`} />
+                                <strong>{item.name}</strong>
+                                {shape === item.id && <Check />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* STEP 3: DECORACIONES */}
+                    {calcStepIndex === 2 && (
+                      <div>
+                        <div className="mb-3">
+                          <h3 className="text-base font-semibold text-[#281f1c]">Diseños y decoraciones</h3>
+                          <p className="text-xs text-[#6a5c55]">Selecciona cuántas uñas llevarán cada efecto artesanal.</p>
+                        </div>
+                        <div className="decoration-grid" data-tour="decorations">
+                          {displayDecorations.slice(0, showAll ? displayDecorations.length : 10).map((item) => (
+                            <div className={`decoration-row ${(decorations[item.id] || 0) > 0 ? 'selected' : ''}`} key={item.id}>
+                              <span className="decor-icon">{item.icon}</span>
+                              <span className="decor-name">
+                                <strong>{item.name}</strong>
+                                <small>{formatMoney(item.price)} / uña</small>
+                              </span>
+                              <Counter
+                                label={item.name}
+                                value={decorations[item.id] || 0}
+                                onChange={(value) => setDecorations((current) => ({ ...current, [item.id]: value }))}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        {decorationOptions.length > 10 && (
+                          <button className="show-more mt-2" type="button" onClick={() => setShowAll((v) => !v)}>
+                            {showAll ? 'Ver menos diseños' : `Ver ${decorationOptions.length - 10} diseños más`}
+                            <ChevronRight className={showAll ? 'rotate-90' : ''} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* STEP 4: EXTRAS */}
+                    {calcStepIndex === 3 && (
+                      <div>
+                        <div className="mb-3">
+                          <h3 className="text-base font-semibold text-[#281f1c]">Últimos detalles y cuidados</h3>
+                          <p className="text-xs text-[#6a5c55]">Personaliza tonos extra, cambio de forma o retiros profesionales.</p>
+                        </div>
+                        <div className="extras-grid" data-tour="extras">
+                          <div className="extra-control">
+                            <span><WandSparkles /><span><strong>Tonos extra</strong><small>2 tonos incluidos · {formatMoney(anchorCatalog.extras.extraTone)} c/u</small></span></span>
+                            <Counter label="tonos extra" value={extraTones} onChange={setExtraTones} />
+                          </div>
+                          <div className="extra-control">
+                            <span><Sparkles /><span><strong>Cambio de forma</strong><small>{formatMoney(anchorCatalog.extras.changeShape)} set</small></span></span>
+                            <button type="button" className={`toggle-pill ${changeShape ? 'active' : ''}`} onClick={() => setChangeShape((v) => !v)} aria-pressed={changeShape}>
+                              {changeShape ? 'Incluido' : 'No'}
+                            </button>
+                          </div>
+                          <div className="extra-control">
+                            <span><Sparkles /><span><strong>Retiro acrílico</strong><small>{formatMoney(anchorCatalog.extras.removalAcrylic)} / uña</small></span></span>
+                            <Counter label="retiro acrílico" value={removal.acrylic} onChange={(v) => setRemoval((c) => ({ ...c, acrylic: v }))} />
+                          </div>
+                          <div className="extra-control">
+                            <span><Sparkles /><span><strong>Retiro gel</strong><small>{formatMoney(anchorCatalog.extras.removalGel)} / uña</small></span></span>
+                            <Counter label="retiro gel" value={removal.gel} onChange={(v) => setRemoval((c) => ({ ...c, gel: v }))} />
+                          </div>
+                          <div className="extra-control">
+                            <span><WandSparkles /><span><strong>Reposición acrílico</strong><small>{formatMoney(anchorCatalog.extras.repairAcrylic)} / uña</small></span></span>
+                            <Counter label="reposición acrílico" value={repairs.acrylic} onChange={(v) => setRepairs((c) => ({ ...c, acrylic: v }))} />
+                          </div>
+                          <div className="extra-control">
+                            <span><WandSparkles /><span><strong>Reposición gel</strong><small>{formatMoney(anchorCatalog.extras.repairGel)} / uña</small></span></span>
+                            <Counter label="reposición gel" value={repairs.gel} onChange={(v) => setRepairs((c) => ({ ...c, gel: v }))} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-              {decorationOptions.length > 10 && <button className="show-more" type="button" onClick={() => setShowAll((value) => !value)}>
-                {showAll ? 'Ver menos diseños' : `Descubrir ${decorationOptions.length - 10} diseños más`} <ChevronRight className={showAll ? 'rotate-90' : ''} />
-              </button>}
-            </div>
 
-            <div className="step-card">
-              <div className="step-title"><span>{techniqueInfo?.usesLengths ? '05' : '04'}</span><div><h3>Últimos detalles</h3><p>Personaliza tonos, retiro y reposiciones.</p></div></div>
-              <div className="extras-grid" data-tour="extras">
-                <div className="extra-control"><span><WandSparkles /><span><strong>Tonos lisos extra</strong><small>2 tonos incluidos · {formatMoney(anchorCatalog.extras.extraTone)} por tono adicional</small></span></span><Counter label="tonos extra" value={extraTones} onChange={setExtraTones} /></div>
-                <div className="extra-control"><span><Sparkles /><span><strong>Cambio de forma</strong><small>{formatMoney(anchorCatalog.extras.changeShape)} por set</small></span></span><button type="button" className={`toggle-pill ${changeShape ? 'active' : ''}`} onClick={() => setChangeShape((value) => !value)} aria-pressed={changeShape}>{changeShape ? 'Incluido' : 'No'}</button></div>
-                <div className="extra-control"><span><Sparkles /><span><strong>Retiro acrílico</strong><small>{formatMoney(anchorCatalog.extras.removalAcrylic)} por uña</small></span></span><Counter label="retiro acrílico" value={removal.acrylic} onChange={(value) => setRemoval((current) => ({ ...current, acrylic: value }))} /></div>
-                <div className="extra-control"><span><Sparkles /><span><strong>Retiro gel</strong><small>{formatMoney(anchorCatalog.extras.removalGel)} por uña</small></span></span><Counter label="retiro gel" value={removal.gel} onChange={(value) => setRemoval((current) => ({ ...current, gel: value }))} /></div>
-                <div className="extra-control"><span><WandSparkles /><span><strong>Reposición acrílico</strong><small>{formatMoney(anchorCatalog.extras.repairAcrylic)} por uña</small></span></span><Counter label="reposición acrílico" value={repairs.acrylic} onChange={(value) => setRepairs((current) => ({ ...current, acrylic: value }))} /></div>
-                <div className="extra-control"><span><WandSparkles /><span><strong>Reposición gel</strong><small>{formatMoney(anchorCatalog.extras.repairGel)} por uña</small></span></span><Counter label="reposición gel" value={repairs.gel} onChange={(value) => setRepairs((current) => ({ ...current, gel: value }))} /></div>
-              </div>
-            </div>
-          </div>
+                  {/* Step Footer Navigation */}
+                  <div className="calc-step-footer">
+                    {calcStepIndex > 0 ? (
+                      <button
+                        type="button"
+                        className="soft-button text-xs py-1.5 px-3"
+                        onClick={() => setCalcStepIndex(calcStepIndex - 1)}
+                      >
+                        ← Anterior
+                      </button>
+                    ) : <div />}
 
-          <aside className="summary-card" data-tour="summary">
-            <p className="eyebrow">Tu selección</p>
-            <h3>Un set muy tú</h3>
-            <div className="summary-preview">
-              <span
-                className={`nail-shape ${shapeInfo.className} ${
-                  techniqueInfo?.usesLengths ? getNailLengthClass(length, lengths) : 'len-3'
-                }`}
+                    {calcStepIndex < 3 ? (
+                      <button
+                        type="button"
+                        className="gold-button text-xs py-1.5 px-3.5"
+                        onClick={() => setCalcStepIndex(calcStepIndex + 1)}
+                      >
+                        Siguiente paso ({CALC_STEPS[calcStepIndex + 1].label}) →
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="gold-button text-xs py-1.5 px-3.5"
+                        onClick={goToBooking}
+                      >
+                        Elegir fecha de cita <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Compact Summary Card */}
+                <aside className="compact-summary-card" data-tour="summary">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="eyebrow text-xs">Tu selección</p>
+                      <span className="text-[0.68rem] text-[#94671e] font-semibold uppercase">Atelier</span>
+                    </div>
+                    <h3 className="text-base font-semibold text-[#281f1c] mb-1.5">Un set muy tú</h3>
+                    <div className="summary-preview mb-2 py-0.5">
+                      <span
+                        className={`nail-shape ${shapeInfo.className} ${
+                          techniqueInfo?.usesLengths ? getNailLengthClass(length, lengths) : 'len-3'
+                        }`}
+                      />
+                      <Sparkles className="w-4 h-4 text-[#c9a054]" />
+                    </div>
+                    <ul className="text-xs space-y-1 max-h-28 overflow-y-auto pr-1 mb-2">
+                      {summary.map((item) => (
+                        <li key={item} className="flex items-center gap-1.5 text-[#5e514a]">
+                          <Check className="w-3 h-3 text-[#c9a054] flex-shrink-0" />
+                          <span className="truncate">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div>
+                    <div className="summary-total mb-2 pt-2 border-t border-[#ebd8ce]">
+                      {discountAmount > 0 ? (
+                        <div className="summary-discount-box p-2">
+                          <div className="summary-discount-row text-xs">
+                            <span>Precio en salón:</span>
+                            <span className="line-through-price">{formatMoney(anchorTotal)}</span>
+                          </div>
+                          <div className="summary-discount-row promo-highlight text-xs py-0.5">
+                            <span className="promo-badge text-[0.68rem]">
+                              <Sparkles className="w-3 h-3" /> Descuento web:
+                            </span>
+                            <strong className="promo-value text-xs">-{formatMoney(discountAmount)}</strong>
+                          </div>
+                          <div className="summary-discount-row final-row pt-1">
+                            <span className="text-xs font-semibold">Total final:</span>
+                            <strong className="final-total text-base">{formatMoney(total)}</strong>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs">
+                            Precio estimado
+                            <small className="block text-[0.65rem] text-[#8c7a72]">
+                              {technique ? 'Soles' : 'Desde S/ 0'}
+                            </small>
+                          </span>
+                          <strong className="text-lg text-[#281f1c]">{formatMoney(total)}</strong>
+                        </div>
+                      )}
+                    </div>
+
+                    <Button className="summary-cta w-full py-2 text-xs" onClick={goToBooking}>
+                      {technique || selectedDesign ? <>Elegir fecha <ArrowRight className="w-3.5 h-3.5" /></> : <>Elegir técnica <ArrowRight className="w-3.5 h-3.5" /></>}
+                    </Button>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <button
+                        type="button"
+                        className={`copy-quote-button flex-1 text-[0.68rem] py-1 ${copiedQuote ? 'copied' : ''}`}
+                        onClick={handleCopyQuote}
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span>{copiedQuote ? '¡Copiada!' : 'Copiar'}</span>
+                      </button>
+                      <button className="reset-button text-[0.68rem] py-1" type="button" onClick={reset}>
+                        <RotateCcw className="w-3 h-3" /> Limpiar
+                      </button>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+
+              {/* Micro Footer Line */}
+              <div className="flex items-center justify-between text-[0.68rem] text-[#8c7b74] pt-2 border-t border-[#ebd8ce]/50 flex-shrink-0">
+                <span>Precios en Soles (PEN) · Incluye manicura rusa y preparación anatómica</span>
+                <a className="text-[#94671e] hover:underline font-medium inline-flex items-center gap-1" href={`https://wa.me/${catalog.whatsapp}`}>
+                  <MessageCircle className="w-3 h-3" /> WhatsApp
+                </a>
+              </div>
+
+              <FloatingSummaryBar
+                summary={summary}
+                total={total}
+                anchorTotal={anchorTotal}
+                discountAmount={discountAmount}
+                formatMoney={formatMoney}
+                hasTechnique={Boolean(technique)}
+                hasSelectedDesign={Boolean(selectedDesign)}
+                onNavigateToBooking={goToBooking}
+                onCopyQuote={handleCopyQuote}
+                onReset={reset}
+                copiedQuote={copiedQuote}
+                stage={stage}
               />
-              <Sparkles />
-            </div>
-            <ul>{summary.map((item) => <li key={item}><Check />{item}</li>)}</ul>
-            <div className="summary-total">
-              {discountAmount > 0 ? (
-                <div className="summary-discount-box">
-                  <div className="summary-discount-row">
-                    <span>Precio en salón:</span>
-                    <span className="line-through-price">{formatMoney(anchorTotal)}</span>
-                  </div>
-                  <div className="summary-discount-row promo-highlight">
-                    <span className="promo-badge">
-                      <Sparkles className="w-3.5 h-3.5" /> Descuento web aplicado:
-                    </span>
-                    <strong className="promo-value">-{formatMoney(discountAmount)}</strong>
-                  </div>
-                  <div className="summary-discount-row final-row">
-                    <span>Total final a pagar:</span>
-                    <strong className="final-total">{formatMoney(total)}</strong>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <span>
-                    Precio estimado
-                    <small>{technique ? 'Soles · sujeto a valoración' : 'Comienza en S/ 0'}</small>
-                  </span>
-                  <strong>{formatMoney(total)}</strong>
-                </>
-              )}
-            </div>
-            <Button className="summary-cta" onClick={goToBooking}>
-              {technique || selectedDesign ? <>Elegir fecha <ArrowRight /></> : <>Elegir técnica <ArrowRight /></>}
-            </Button>
-            <button
-              type="button"
-              className={`copy-quote-button ${copiedQuote ? 'copied' : ''}`}
-              onClick={handleCopyQuote}
-            >
-              <Copy />
-              <span>{copiedQuote ? '¡Cotización copiada!' : 'Copiar cotización'}</span>
-            </button>
-            <button className="reset-button" type="button" onClick={reset}><RotateCcw /> Limpiar selección</button>
-          </aside>
-        </div>
-      </section>
-
-            <footer>
-              <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
-              <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
-            </footer>
-
-            <FloatingSummaryBar
-              summary={summary}
-              total={total}
-              anchorTotal={anchorTotal}
-              discountAmount={discountAmount}
-              formatMoney={formatMoney}
-              hasTechnique={Boolean(technique)}
-              hasSelectedDesign={Boolean(selectedDesign)}
-              onNavigateToBooking={goToBooking}
-              onCopyQuote={handleCopyQuote}
-              onReset={reset}
-              copiedQuote={copiedQuote}
-              stage={stage}
-            />
+            </section>
           </div>
         )}
 
         {/* TAB 5: RESERVAR CITA */}
         {activeTab === 'booking' && (
           <div className="tab-view-container">
-            <section id="booking" className="booking-section flex-1">
-              <div className="booking-header">
-                <div>
-                  <p className="eyebrow">Tu momento</p>
-                  <h2>Agenda tu cita</h2>
-                  <p>{selectedDesign ? `Reservando “${selectedDesign.title}”. Completa tus datos y elige un horario.` : 'Elige una fecha disponible y el horario que mejor te quede.'}</p>
+            <div className="flex flex-col h-full gap-2 min-h-0">
+              {/* Header Mini-Bar */}
+              <div className="flex items-center justify-between bg-white/85 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-[#eaded8]/60 shadow-xs flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="eyebrow text-xs mb-0">Atelier Valentina</span>
+                  <span className="text-[#c9a054]">·</span>
+                  <h2 className="text-sm md:text-base font-serif font-bold text-[#281f1c] mb-0">
+                    Agenda tu cita
+                  </h2>
+                  {selectedDesign && (
+                    <span className="hidden sm:inline text-xs text-[#8c7b74] truncate max-w-xs">
+                      (Reservando “{selectedDesign.title}”)
+                    </span>
+                  )}
                 </div>
-                <div className="booking-total">
-                  <span>{discountAmount > 0 ? 'Total con beneficio web' : 'Tu set'}</span>
-                  {discountAmount > 0 && <small className="booking-anchor-crossed">{formatMoney(anchorTotal)}</small>}
-                  <strong>{formatMoney(total)}</strong>
+
+                <div className="flex items-center gap-2 bg-amber-50/90 border border-amber-200/80 rounded-full px-2.5 py-0.5">
+                  <span className="text-[0.68rem] text-[#8a7e78] uppercase font-semibold">Total:</span>
+                  {discountAmount > 0 && (
+                    <span className="text-xs line-through text-[#8e817b]">{formatMoney(anchorTotal)}</span>
+                  )}
+                  <strong className="text-sm font-serif font-bold text-[#9c6d20]">{formatMoney(total)}</strong>
+                  {discountAmount > 0 && (
+                    <span className="text-[0.62rem] bg-[#c9a054] text-white px-1.5 py-0.5 rounded-full font-bold">
+                      Beneficio web -{formatMoney(discountAmount)}
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="booking-grid">
-                <div className="booking-form" data-tour="client-data">
-                  <label htmlFor="name">Nombre de la clienta</label>
-                  <Input id="name" value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Tu nombre completo" className="booking-input" autoComplete="name" />
-                  <label htmlFor="phone">Teléfono</label>
-                  <Input id="phone" value={clientPhone} onChange={(event) => setClientPhone(event.target.value)} placeholder="Tu número de contacto" className="booking-input" inputMode="tel" autoComplete="tel" />
-                  <div className="mini-summary"><span><Gem /></span><div><strong>{summary[0]}</strong><p>{summary.slice(1, 4).join(' · ')}{summary.length > 4 ? ` · +${summary.length - 4} más` : ''}</p></div></div>
-                  <button type="button" className="back-link" onClick={() => { setSelectedDesign(null); setStage('design'); handleTabChange('calculadora'); }}>← {selectedDesign ? 'Prefiero personalizarlo' : 'Editar mi diseño'}</button>
+
+              {/* Main 2-Column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 flex-1 min-h-0">
+                {/* Left Column: Form & Confirmation (md:col-span-5) */}
+                <div
+                  className="md:col-span-5 bg-white/95 rounded-2xl border border-[#eaded8] p-3.5 shadow-sm flex flex-col justify-between min-h-0 overflow-y-auto"
+                  data-tour="client-data"
+                >
+                  <div className="space-y-2">
+                    <div>
+                      <label htmlFor="name" className="text-xs font-bold text-[#4a3e39] block mb-1">
+                        Nombre de la clienta
+                      </label>
+                      <Input
+                        id="name"
+                        value={clientName}
+                        onChange={(event) => setClientName(event.target.value)}
+                        placeholder="Tu nombre completo"
+                        className="h-8 text-xs rounded-xl bg-[#fffaf8]"
+                        autoComplete="name"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="phone" className="text-xs font-bold text-[#4a3e39] block mb-1">
+                        Teléfono WhatsApp
+                      </label>
+                      <Input
+                        id="phone"
+                        value={clientPhone}
+                        onChange={(event) => setClientPhone(event.target.value)}
+                        placeholder="Ej. 987 654 321"
+                        className="h-8 text-xs rounded-xl bg-[#fffaf8]"
+                        inputMode="tel"
+                        autoComplete="tel"
+                      />
+                    </div>
+
+                    {/* Mini Summary */}
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-[#fdf5f6] border border-[#ecdde1] text-xs">
+                      <span className="w-7 h-7 rounded-lg bg-[#f5e7cd] text-[#9b6b1e] flex items-center justify-center flex-shrink-0">
+                        <Gem className="w-3.5 h-3.5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <strong className="text-xs text-[#281f1c] block truncate">{summary[0]}</strong>
+                        <p className="text-[0.65rem] text-[#857873] truncate">
+                          {summary.slice(1, 4).join(' · ')}{summary.length > 4 ? ` · +${summary.length - 4}` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Selection Pill */}
+                    <div className="text-[0.72rem] text-[#6d5e56] bg-[#faf6f3] rounded-xl p-2 border border-[#eaded8]/70 flex items-center justify-between">
+                      <span className="flex items-center gap-1 font-medium truncate">
+                        <CalendarDays className="w-3.5 h-3.5 text-[#94671e] flex-shrink-0" />
+                        <span className="truncate">
+                          {selectedDate ? formatBookingDatePEN(selectedDate) : 'Fecha sin elegir'}
+                        </span>
+                      </span>
+                      <span className="font-semibold text-[#94671e] ml-1 flex-shrink-0">
+                        {selectedTime || 'Hora pendiente'}
+                      </span>
+                    </div>
+
+                    {error && (
+                      <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2 text-center" role="alert">
+                        {error}
+                      </p>
+                    )}
+                    {confirmed && (
+                      <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center flex items-center justify-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" /> Cita guardada. Abriendo WhatsApp…
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-2 border-t border-[#ebd8ce]/50 space-y-1.5" data-tour="confirm">
+                    <Button
+                      className="whatsapp-button w-full h-9 text-xs font-semibold rounded-full flex items-center justify-center gap-2"
+                      onClick={confirmBooking}
+                      disabled={submitting || confirmed || !authReady || catalogLoading}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      {submitting ? 'Guardando cita…' : 'Guardar y confirmar por WhatsApp'}
+                    </Button>
+                    <div className="flex items-center justify-between text-[0.68rem] px-1">
+                      <button
+                        type="button"
+                        className="text-[#936820] hover:underline"
+                        onClick={() => {
+                          setSelectedDesign(null);
+                          setStage('design');
+                          handleTabChange('calculadora');
+                        }}
+                      >
+                        ← {selectedDesign ? 'Personalizar set' : 'Editar diseño'}
+                      </button>
+                      <button
+                        type="button"
+                        className="text-[#897d77] hover:text-red-500 flex items-center gap-1"
+                        onClick={reset}
+                      >
+                        <Trash2 className="w-3 h-3" /> Limpiar
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="calendar-panel" data-tour="calendar">
-                  <Calendar
-                    mode="single"
-                    locale={es}
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={(date) => {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      return date < today || date.getDay() === 0 || isFullyBooked(date);
-                    }}
-                    modifiers={{ fullyBooked: isFullyBooked }}
-                    modifiersClassNames={{ fullyBooked: 'fully-booked-day' }}
-                    className="booking-calendar"
-                    classNames={{
-                      month_grid: 'w-full border-collapse',
-                      day: 'relative aspect-square h-full w-full rounded-full p-0 text-center',
-                      today: 'rounded-full bg-[#f8e7eb] text-[#8d4b60]',
-                    }}
-                  />
-                  <div className="hours-panel">
-                    <div className="live-schedule-note"><i /> Agenda en vivo</div>
-                    <div className="hours-title"><Clock3 /><span><strong>{selectedDate ? 'Horarios disponibles' : 'Selecciona una fecha'}</strong><small>{selectedDate ? formatBookingDatePEN(selectedDate) : 'Domingos permanecemos cerradas'}</small></span></div>
-                    {selectedDate && <div className="time-grid">{times.map((time) => { const unavailable = occupied.includes(time); return <button key={time} type="button" disabled={unavailable || loadingSlots} className={selectedTime === time ? 'selected' : ''} onClick={() => setSelectedTime(time)}>{time}<small>{unavailable ? 'Ocupado' : 'Disponible'}</small></button>; })}</div>}
-                    {selectedDate && times.length > 0 && times.every((time) => occupied.includes(time)) && <p className="fully-booked-message">Este día ya está completo. Selecciona otra fecha disponible.</p>}
+
+                {/* Right Column: Calendar & Slots (md:col-span-7) */}
+                <div
+                  className="md:col-span-7 bg-white/95 rounded-2xl border border-[#eaded8] p-3 shadow-sm flex flex-col justify-between min-h-0"
+                  data-tour="calendar"
+                >
+                  <div className="flex items-center justify-between pb-1.5 border-b border-[#eaded8]/60 flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Clock3 className="w-4 h-4 text-[#a7782a]" />
+                      <div>
+                        <h4 className="text-xs font-bold text-[#281f1c]">
+                          {selectedDate ? formatBookingDatePEN(selectedDate) : '1. Elige una fecha'}
+                        </h4>
+                        <p className="text-[0.65rem] text-[#897d77]">
+                          {selectedDate ? '2. Selecciona un horario disponible' : 'Domingos permanecemos cerradas'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="live-schedule-note text-[0.62rem] py-0.5 px-2">
+                      <i /> Agenda en vivo
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 flex-1 min-h-0 items-center py-2">
+                    {/* Calendar */}
+                    <div className="sm:col-span-6 flex justify-center">
+                      <Calendar
+                        mode="single"
+                        locale={es}
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        disabled={(date) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return date < today || date.getDay() === 0 || isFullyBooked(date);
+                        }}
+                        modifiers={{ fullyBooked: isFullyBooked }}
+                        modifiersClassNames={{ fullyBooked: 'fully-booked-day' }}
+                        className="booking-calendar scale-95 origin-top p-1"
+                        classNames={{
+                          month_grid: 'w-full border-collapse',
+                          day: 'relative aspect-square h-full w-full rounded-full p-0 text-center text-xs',
+                          today: 'rounded-full bg-[#f8e7eb] text-[#8d4b60]',
+                        }}
+                      />
+                    </div>
+
+                    {/* Time Slots */}
+                    <div className="sm:col-span-6 flex flex-col h-full justify-center">
+                      <p className="text-[0.7rem] font-semibold text-[#5e514a] mb-1.5">
+                        Turnos del día:
+                      </p>
+                      {selectedDate ? (
+                        <div className="time-grid max-h-[195px] overflow-y-auto pr-1 gap-1.5">
+                          {times.map((time) => {
+                            const unavailable = occupied.includes(time);
+                            return (
+                              <button
+                                key={time}
+                                type="button"
+                                disabled={unavailable || loadingSlots}
+                                className={`text-xs py-1.5 px-2 rounded-xl border flex flex-col items-center justify-center transition-all min-h-0 ${
+                                  selectedTime === time
+                                    ? 'border-[#b78633] bg-[#f9e8ec] text-[#281f1c] font-semibold'
+                                    : unavailable
+                                    ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed line-through'
+                                    : 'border-[#eaded8] bg-white hover:border-[#c9a054] text-[#4a3e39]'
+                                }`}
+                                onClick={() => setSelectedTime(time)}
+                              >
+                                <span className="font-medium">{time}</span>
+                                <small className="text-[0.58rem] font-normal">{unavailable ? 'Ocupado' : 'Disponible'}</small>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-xs text-[#8c7b74]">
+                          Selecciona una fecha en el calendario para ver los horarios disponibles.
+                        </div>
+                      )}
+                      {selectedDate && times.length > 0 && times.every((time) => occupied.includes(time)) && (
+                        <p className="fully-booked-message mt-1 text-xs">
+                          Este día ya está completo. Selecciona otra fecha disponible.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-              {error && <p className="booking-error" role="alert">{error}</p>}
-              {confirmed && <p className="booking-success"><Check /> Cita guardada. Abriendo WhatsApp…</p>}
-              <div className="booking-actions" data-tour="confirm">
-                <Button variant="outline" className="clear-booking" onClick={reset}><Trash2 /> Limpiar todo</Button>
-                <Button className="whatsapp-button" onClick={confirmBooking} disabled={submitting || confirmed || !authReady || catalogLoading}>{submitting ? 'Guardando cita…' : 'Guardar y confirmar por WhatsApp'} <MessageCircle /></Button>
-              </div>
-            </section>
 
-            <footer>
-              <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
-              <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
-            </footer>
+              {/* Micro Footer Line */}
+              <div className="flex items-center justify-between text-[0.68rem] text-[#8c7b74] pt-1.5 border-t border-[#ebd8ce]/50 flex-shrink-0">
+                <span>Lunes a viernes · {catalog.schedule.weekdays.join(', ')} · Sábado · {catalog.schedule.saturday.join(', ')}</span>
+                <a className="text-[#94671e] hover:underline font-medium inline-flex items-center gap-1" href={`https://wa.me/${catalog.whatsapp}`}>
+                  <MessageCircle className="w-3 h-3" /> WhatsApp directo
+                </a>
+              </div>
+            </div>
           </div>
         )}
       </div>
