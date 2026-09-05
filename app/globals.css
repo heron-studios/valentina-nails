@@ -1702,7 +1702,10 @@ footer p { margin: 0; text-align: left; font-size: .63rem; line-height: 1.7; }
   justify-content: center;
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.chat-launcher-icon svg { width: 1.2rem; height: 1.2rem; }
+.chat-launcher-icon > svg { width: 1.2rem; height: 1.2rem; }
+.chat-launcher-icon .lottie-bot-container svg { width: 100% !important; height: 100% !important; }
+.chat-avatar-badge .lottie-bot-container svg { width: 100% !important; height: 100% !important; }
+.lottie-bot-container svg { display: block; margin: auto; }
 .chat-launcher.pulse-launcher { animation: subtle-pulse 3.2s infinite; }
 .chat-launcher-badge {
   position: absolute;

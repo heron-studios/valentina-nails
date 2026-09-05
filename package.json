@@ -10,7 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "node --experimental-strip-types --test test/*.test.ts",
-    "lint": "oxlint app/page.tsx app/admin-page.tsx components/availability-view.tsx components/chat-assistant.tsx components/floating-summary-bar.tsx components/liquid-glass-hero.tsx components/shader-backdrop.tsx components/ui/button.tsx components/ui/calendar.tsx components/ui/input.tsx lib/availability.ts lib/catalog.ts lib/chat-assistant.ts lib/designs.ts lib/firebase.ts lib/format-utils.ts lib/pricing.ts lib/utils.ts src/main.tsx vite.config.ts",
+    "lint": "oxlint app/page.tsx app/admin-page.tsx components/availability-view.tsx components/chat-assistant.tsx components/floating-summary-bar.tsx components/liquid-glass-hero.tsx components/lottie-assistant-bot.tsx components/shader-backdrop.tsx components/ui/button.tsx components/ui/calendar.tsx components/ui/input.tsx lib/availability.ts lib/catalog.ts lib/chat-assistant.ts lib/designs.ts lib/firebase.ts lib/format-utils.ts lib/pricing.ts lib/utils.ts src/main.tsx vite.config.ts",
     "format": "oxfmt"
   },
   "dependencies": {
@@ -20,6 +20,7 @@
     "clsx": "2.1.1",
     "date-fns": "4.1.0",
     "firebase": "^12.18.0",
+    "lottie-web": "^5.13.0",
     "lucide-react": "1.31.0",
     "react": "19.2.6",
     "react-day-picker": "9.8.1",

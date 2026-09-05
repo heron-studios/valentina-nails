@@ -9,6 +9,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+import { LottieAssistantBot } from '@/components/lottie-assistant-bot';
 import type { SalonCatalog } from '@/lib/catalog';
 import {
   generateLocalBotResponse,
@@ -208,7 +209,7 @@ export function ChatAssistant({
         >
           <header>
             <span className="chat-avatar-badge" aria-hidden="true">
-              V
+              <LottieAssistantBot className="w-8 h-8" />
             </span>
             <div className="chat-header-info">
               <strong>Valentina Nails Atelier</strong>
@@ -346,7 +347,7 @@ export function ChatAssistant({
         aria-label={open ? 'Cerrar asistente' : 'Abrir asistente virtual'}
       >
         <span className="chat-launcher-icon">
-          {open ? <X className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+          {open ? <X className="w-5 h-5" /> : <LottieAssistantBot className="w-10 h-10" />}
         </span>
         {!hasInteracted && !open && <span className="chat-launcher-badge" />}
       </button>
