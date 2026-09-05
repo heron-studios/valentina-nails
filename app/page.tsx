@@ -36,7 +36,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ShaderBackdrop } from '@/components/shader-backdrop';
-import { LiquidImage } from '@/components/liquid-image';
+import { LiquidGlassHero } from '@/components/liquid-glass-hero';
 import { ChatAssistant } from '@/components/chat-assistant';
 import { auth, db } from '@/lib/firebase';
 import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/catalog';
@@ -452,13 +452,13 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="hero-art">
-            <LiquidImage
-              src={`${import.meta.env.BASE_URL}og.png`}
-              alt="Manicure almendra en rosa blush con un delicado detalle dorado"
-            />
-            <div className="hero-price"><span>sets desde</span><strong>{formatMoney(Number.isFinite(startingPrice) ? startingPrice : 0)}</strong></div>
-          </div>
+          <LiquidGlassHero
+            startingPrice={startingPrice}
+            formatMoney={formatMoney}
+            onExplore={() => {
+              document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          />
         </div>
       </section>
 

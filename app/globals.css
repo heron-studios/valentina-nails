@@ -107,20 +107,28 @@ svg { stroke-width: 1.7; }
 .stars { display: flex; color: #b28230; }
 .stars svg { width: .75rem; height: .75rem; fill: currentColor; }
 .hero-proof p { margin: .2rem 0 0; color: #746a65; font-size: .72rem; }
-.hero-art {
+/* ─────────────────────────────────────────────────────────────
+   Apple iOS Liquid Glass Design System
+   ───────────────────────────────────────────────────────────── */
+.liquid-glass-hero {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9.8;
+  aspect-ratio: 16 / 11;
+  min-height: 440px;
   overflow: hidden;
-  border: 1.5px solid rgba(212, 175, 101, .55);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
   border-radius: 2.2rem;
-  background: #eadbd6;
+  background: rgba(255, 253, 250, 0.65);
   box-shadow:
-    0 40px 100px rgba(77, 48, 38, .18),
-    0 12px 30px rgba(77, 48, 38, .10),
-    0 0 0 1px rgba(255, 255, 255, .25) inset;
+    0 40px 100px rgba(77, 48, 38, 0.14),
+    0 12px 32px rgba(77, 48, 38, 0.08),
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1.5px 2px 0 rgba(212, 175, 101, 0.22);
+  backdrop-filter: blur(28px) saturate(1.85);
+  -webkit-backdrop-filter: blur(28px) saturate(1.85);
 }
-.hero-art::before {
+
+.liquid-glass-hero::before {
   content: '';
   position: absolute;
   inset: -2px;
@@ -128,14 +136,14 @@ svg { stroke-width: 1.7; }
   border-radius: inherit;
   background: conic-gradient(
     from var(--nacre-angle, 0deg),
-    rgba(212,175,101,.0)  0%,
-    rgba(255,225,180,.22) 15%,
-    rgba(242,195,210,.18) 30%,
-    rgba(255,255,255,.12) 45%,
-    rgba(212,175,101,.18) 60%,
-    rgba(210,180,230,.10) 75%,
-    rgba(255,225,180,.08) 90%,
-    rgba(212,175,101,.0)  100%
+    rgba(212, 175, 101, 0) 0%,
+    rgba(255, 235, 205, 0.35) 15%,
+    rgba(247, 205, 218, 0.28) 30%,
+    rgba(255, 255, 255, 0.45) 45%,
+    rgba(212, 175, 101, 0.30) 60%,
+    rgba(225, 205, 240, 0.22) 75%,
+    rgba(255, 235, 205, 0.25) 90%,
+    rgba(212, 175, 101, 0) 100%
   );
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
@@ -145,32 +153,8 @@ svg { stroke-width: 1.7; }
   animation: nacre-spin 8s linear infinite;
   pointer-events: none;
 }
-.hero-art::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  box-shadow:
-    inset 0 0 0 10px rgba(255,255,255,.18),
-    inset 0 -24px 48px rgba(255, 240, 220, .12);
-  pointer-events: none;
-}
-@keyframes nacre-spin {
-  to { --nacre-angle: 360deg; }
-}
-@property --nacre-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-.liquid-image-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border-radius: inherit;
-}
-.liquid-image-canvas {
+
+.liquid-glass-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -178,55 +162,212 @@ svg { stroke-width: 1.7; }
   display: block;
   cursor: grab;
   touch-action: none;
-  transition: opacity .35s ease;
 }
-.liquid-image-canvas:active {
+.liquid-glass-canvas:active {
   cursor: grabbing;
 }
-.liquid-image-canvas.is-loading {
-  opacity: 0;
-  pointer-events: none;
-}
-.liquid-image-canvas.is-ready {
-  opacity: 1;
-}
-.liquid-image-fallback {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-  display: block;
-  border-radius: inherit;
-  transition: opacity .35s ease;
-}
-.liquid-image-fallback.is-hidden {
-  opacity: 0;
-  pointer-events: none;
+
+.liquid-glass-fallback {
   position: absolute;
   inset: 0;
+  background: radial-gradient(circle at 60% 40%, rgba(255, 230, 238, 0.7) 0%, rgba(253, 242, 232, 0.8) 50%, rgba(247, 232, 224, 0.9) 100%);
 }
-.hero-price {
+
+.liquid-glass-content {
   position: absolute;
-  right: 1.3rem;
-  bottom: 1.3rem;
+  inset: 0;
   z-index: 10;
   display: flex;
-  align-items: baseline;
-  gap: .45rem;
-  border: 1px solid rgba(255,255,255,.75);
-  border-radius: 999px;
-  padding: .65rem 1.1rem;
-  background: rgba(255, 252, 249, .82);
-  box-shadow: 0 14px 32px rgba(75, 48, 39, .14), 0 0 0 1px rgba(212, 175, 101, .22);
-  backdrop-filter: blur(14px) saturate(1.4);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.4rem;
+  pointer-events: none;
 }
-.hero-price span { color: #766862; font-size: .65rem; text-transform: uppercase; letter-spacing: .12em; }
-.hero-price strong { font-family: Georgia, serif; font-size: 1.45rem; font-weight: 500; color: #94681e; }
 
-.experience-strip { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); max-width: 1180px; margin: -33px auto 0; position: relative; z-index: 2; border: 1px solid #e5d8d1; border-radius: 1.4rem; background: rgba(255,254,252,.96); box-shadow: 0 22px 55px rgba(76,47,37,.08); }
+.liquid-glass-badge {
+  pointer-events: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 8px 24px rgba(45, 30, 24, 0.08), inset 0 1px 1px #fff;
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: #382c27;
+  letter-spacing: 0.01em;
+}
+.liquid-glass-badge .live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2ea043;
+  box-shadow: 0 0 0 2px rgba(46, 160, 67, 0.25);
+  animation: dot-pulse 2.2s ease-in-out infinite;
+}
+
+.liquid-nail-display {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: auto 0;
+}
+
+.nail-silhouette-glass {
+  position: relative;
+  width: 140px;
+  height: 200px;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 18px 36px rgba(75, 42, 32, 0.18));
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.nail-silhouette-glass:hover {
+  transform: scale(1.05) translateY(-4px);
+}
+.nail-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 14px rgba(212, 175, 101, 0.25));
+}
+.nail-path {
+  transition: d 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.gold-foil-vein {
+  filter: drop-shadow(0 0 4px rgba(212, 175, 101, 0.5));
+}
+.nail-glint-orb {
+  position: absolute;
+  top: 18%;
+  left: 36%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 75%);
+  pointer-events: none;
+  animation: glint-float 3.6s ease-in-out infinite alternate;
+}
+@keyframes glint-float {
+  0%   { transform: translate(0, 0) scale(0.9); opacity: 0.7; }
+  100% { transform: translate(6px, 12px) scale(1.2); opacity: 1; }
+}
+
+.glass-shape-selector {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 0.35rem;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 10px 30px rgba(50, 32, 25, 0.08), inset 0 1px 1px #fff;
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+}
+.glass-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.38rem 0.85rem;
+  background: transparent;
+  color: #63534b;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-chip:hover {
+  background: rgba(255, 255, 255, 0.85);
+  color: #241c19;
+}
+.glass-chip.is-active {
+  background: #281f1c;
+  color: #fff9f5;
+  box-shadow: 0 6px 18px rgba(40, 31, 28, 0.3);
+}
+
+.liquid-glass-dock {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 1.4rem;
+  padding: 0.8rem 1.15rem;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 16px 40px rgba(50, 30, 22, 0.1),
+    inset 0 1.5px 1px #fff,
+    inset 0 -1px 2px rgba(212, 175, 101, 0.18);
+  backdrop-filter: blur(24px) saturate(1.85);
+  -webkit-backdrop-filter: blur(24px) saturate(1.85);
+}
+.glass-price-info {
+  display: flex;
+  flex-direction: column;
+}
+.glass-price-info small {
+  color: #83726a;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.glass-price-info strong {
+  font-family: Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: #94671e;
+}
+.glass-dock-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #d4af65;
+  border-radius: 999px;
+  padding: 0.55rem 1.15rem;
+  color: #fff;
+  background: linear-gradient(135deg, #a77726 0%, #7d5415 100%);
+  box-shadow: 0 8px 22px rgba(125, 84, 21, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease;
+}
+.glass-dock-cta:hover {
+  transform: scale(1.05) translateY(-1px);
+  box-shadow: 0 12px 28px rgba(125, 84, 21, 0.4);
+}
+.glass-dock-cta:active {
+  transform: scale(0.97);
+}
+
+.liquid-glass-hint {
+  align-self: center;
+  margin-top: 0.4rem;
+  color: #8c7a72;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.experience-strip { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); max-width: 1180px; margin: -33px auto 0; position: relative; z-index: 2; border: 1px solid rgba(255, 255, 255, 0.85); border-radius: 1.6rem; background: rgba(255, 254, 252, 0.76); box-shadow: 0 24px 60px rgba(76, 47, 37, 0.07), inset 0 1px 1px #fff; backdrop-filter: blur(28px) saturate(1.85); -webkit-backdrop-filter: blur(28px) saturate(1.85); }
 .experience-strip > div { display: flex; align-items: center; gap: 1rem; padding: 1.3rem 1.6rem; }
-.experience-strip > div + div { border-left: 1px solid #e9ddd7; }
+.experience-strip > div + div { border-left: 1px solid rgba(233, 221, 215, 0.6); }
 .experience-strip svg { width: 1.25rem; color: #a7782a; }
 .experience-strip span { color: #756963; font-size: .72rem; line-height: 1.4; }
 .experience-strip strong { display: block; margin-bottom: .18rem; color: #312824; font-size: .79rem; }
@@ -237,7 +378,7 @@ svg { stroke-width: 1.7; }
 .section-heading > p:last-child, .booking-header > div > p:last-child { max-width: 560px; color: #746963; line-height: 1.7; }
 .builder-layout { display: grid; grid-template-columns: minmax(0,1fr) 350px; align-items: start; gap: 2rem; }
 .builder-main { display: grid; gap: 1.4rem; }
-.step-card { border: 1px solid #eaded8; border-radius: 1.7rem; padding: 1.7rem; background: rgba(255,255,255,.76); box-shadow: 0 16px 45px rgba(77,48,38,.05); }
+.step-card { border: 1px solid rgba(255, 255, 255, 0.85); border-radius: 1.8rem; padding: 1.7rem; background: rgba(255, 255, 255, 0.78); box-shadow: 0 18px 48px rgba(77, 48, 38, 0.05), inset 0 1px 1.5px #fff; backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); }
 .step-title { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.6rem; }
 .step-title > span { display: grid; width: 2.4rem; height: 2.4rem; flex: 0 0 auto; place-items: center; border: 1px solid #d1af71; border-radius: 50%; color: #9b6b1d; font-family: Georgia, serif; font-size: .78rem; }
 .step-title h3 { margin: 0; font-family: Georgia, serif; font-size: 1.65rem; font-weight: 500; }
@@ -1044,10 +1185,12 @@ footer p { margin: 0; text-align: left; font-size: .63rem; line-height: 1.7; }
 @media (max-width: 520px) {
   .gold-button, .soft-button { width: 100%; }
   .hero { padding-left: 1.1rem; padding-right: 1.1rem; }
-  .hero-art { min-height: unset; aspect-ratio: 16 / 9.5; border-radius: 1.5rem; }
-  .hero-price { right: .75rem; bottom: .75rem; padding: .4rem .75rem; }
-  .hero-price span { font-size: .55rem; }
-  .hero-price strong { font-size: 1.15rem; }
+  .liquid-glass-hero { min-height: 420px; aspect-ratio: 16 / 13; border-radius: 1.6rem; }
+  .liquid-glass-content { padding: 1rem; }
+  .nail-silhouette-glass { width: 110px; height: 160px; }
+  .liquid-glass-dock { padding: 0.65rem 0.95rem; border-radius: 1.15rem; }
+  .glass-price-info strong { font-size: 1.15rem; }
+  .glass-dock-cta { padding: 0.48rem 0.95rem; font-size: 0.72rem; }
   .experience-strip { margin-left: .7rem; margin-right: .7rem; }
   .step-card { border-radius: 1.25rem; padding: 1rem; }
   .step-title { align-items: flex-start; gap: .7rem; }
