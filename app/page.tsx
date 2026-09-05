@@ -90,9 +90,12 @@ function Counter({ value, onChange, label, max = 10 }: { value: number; onChange
   );
 }
 
+export type ActiveTab = 'inicio' | 'experiencia' | 'galeria' | 'calculadora' | 'booking';
+
 export default function Home() {
   const [catalog, setCatalog] = useState<SalonCatalog>(() => structuredClone(DEFAULT_CATALOG));
   const [catalogLoading, setCatalogLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('inicio');
   const [technique, setTechnique] = useState('');
   const [length, setLength] = useState('length-4');
   const [shape, setShape] = useState('almond');
@@ -103,6 +106,32 @@ export default function Home() {
   const [repairs, setRepairs] = useState({ acrylic: 0, gel: 0 });
   const [showAll, setShowAll] = useState(false);
   const [stage, setStage] = useState<'design' | 'booking'>('design');
+
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    if (tab === 'booking') {
+      setStage('booking');
+    } else {
+      setStage('design');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      window.history.replaceState(null, '', `#${tab}`);
+    } catch {}
+  };
+
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['inicio', 'experiencia', 'galeria', 'calculadora', 'booking'].includes(hash)) {
+        setActiveTab(hash as ActiveTab);
+        if (hash === 'booking') setStage('booking');
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -298,6 +327,16 @@ export default function Home() {
   }, [wizardStep]);
 
   useEffect(() => {
+    if (wizardStep === null) return;
+    if (wizardStep < 5 && activeTab !== 'calculadora') {
+      setActiveTab('calculadora');
+    } else if (wizardStep >= 5 && activeTab !== 'booking') {
+      setActiveTab('booking');
+      setStage('booking');
+    }
+  }, [wizardStep, activeTab]);
+
+  useEffect(() => {
     if (technique && !techniques.some((item) => item.id === technique)) {
       setTechnique(techniques[0]?.id || '');
     }
@@ -339,18 +378,16 @@ export default function Home() {
   const goToBooking = () => {
     if (!technique && !selectedDesign) {
       setError('Por favor elige una técnica base (Acrílico, Gel o Rubber) antes de continuar con tu cita.');
-      document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      handleTabChange('calculadora');
       return;
     }
     setError('');
-    setStage('booking');
-    setTimeout(() => document.querySelector('#booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    handleTabChange('booking');
   };
 
   const replicateDesign = (design: DesignExample) => {
     setSelectedDesign(design);
-    setStage('booking');
-    setTimeout(() => document.querySelector('#booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    handleTabChange('booking');
   };
 
   const closeWizard = (startDesign = false) => {
@@ -360,7 +397,7 @@ export default function Home() {
       // The guide still closes when browser storage is unavailable.
     }
     setWizardStep(null);
-    if (startDesign) setTimeout(() => document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    if (startDesign) handleTabChange('calculadora');
   };
 
   const handleCopyQuote = async () => {
@@ -448,108 +485,285 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-background text-foreground">
-      <section id="inicio" className="hero relative isolate border-b border-[#b9944f]/25 px-5 pb-20 pt-7 sm:px-10 lg:px-16">
-        <div className="marble absolute inset-0 -z-20" />
-        <ShaderBackdrop />
-        <div className="blush-orb absolute -right-24 top-12 -z-10 h-96 w-96 rounded-full" />
-        <div className="gold-orb" aria-hidden="true" />
-        <nav className="atelier-nav mx-auto max-w-7xl justify-end">
-          <div className="hidden items-center gap-7 md:flex">
-            <a className="nav-link" href="#experiencia">Experiencia</a>
-            <a className="nav-link" href="#galeria">Galería</a>
-            <a className="nav-link" href="#calculadora">Calculadora</a>
-            <a className="gold-button" href="#booking" onClick={goToBooking}>
-              Reservar cita <ArrowRight />
-            </a>
-          </div>
-        </nav>
+    <main className="min-h-screen overflow-x-hidden bg-background text-foreground flex flex-col">
+      {/* Atelier Global Tab Header */}
+      <header className="atelier-header">
+        <div className="atelier-nav">
+          <button
+            type="button"
+            className="brand-lockup"
+            onClick={() => handleTabChange('inicio')}
+            aria-label="Ir a Inicio"
+          >
+            <span className="brand-mark">V</span>
+            <span className="brand-text">
+              <strong>{catalog.businessName || 'Valentina Nails'}</strong>
+              <small>Nail Atelier</small>
+            </span>
+          </button>
 
-        <div className="mx-auto grid max-w-7xl gap-12 pb-4 pt-16 lg:grid-cols-[1.06fr_.94fr] lg:items-center lg:pt-24">
-          <div>
-            <p className="eyebrow">Nail atelier · Diseño a tu medida</p>
-            <h1 className="hero-title mt-5">
-              Tus uñas,
-              <span>tu firma.</span>
-            </h1>
-            <p className="mt-7 max-w-xl text-base leading-7 text-[#5f5651] sm:text-lg">
-              Diseña tu set, conoce el precio al instante y reserva el momento perfecto para ti.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a className="gold-button" href="#calculadora">
-                Crear mi set <WandSparkles />
-              </a>
-              <a className="soft-button" href="#booking" onClick={goToBooking}>
-                <CalendarDays /> Ver disponibilidad
-              </a>
-            </div>
-            <div className="hero-proof">
-              <div className="avatar-stack"><span>V</span><span>P</span><span>✿</span></div>
-              <div><div className="stars"><Star /><Star /><Star /><Star /><Star /></div><p>Detalles impecables. Experiencia personalizada.</p></div>
-            </div>
-          </div>
-
-          <LiquidGlassHero
-            currentShape={shape}
-            onSelectShape={(newShape) => setShape(newShape)}
-            currentLength={length}
-            onSelectLength={(newLength) => setLength(newLength)}
-            currentTechnique={technique}
-            onSelectTechnique={(newTech) => setTechnique(newTech)}
-            availableTechniques={displayTechniques}
-            totalPrice={total}
-            anchorPrice={anchorTotal}
-            discountAmount={discountAmount}
-            formatMoney={formatMoney}
-            onStartCustomizing={() => {
-              document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          />
+          {/* Desktop Tab Links */}
+          <nav className="nav-tab-links" aria-label="Navegación principal">
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'inicio' ? 'active' : ''}`}
+              onClick={() => handleTabChange('inicio')}
+            >
+              Inicio
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'experiencia' ? 'active' : ''}`}
+              onClick={() => handleTabChange('experiencia')}
+            >
+              Experiencia
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'galeria' ? 'active' : ''}`}
+              onClick={() => handleTabChange('galeria')}
+            >
+              Galería
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'calculadora' ? 'active' : ''}`}
+              onClick={() => handleTabChange('calculadora')}
+            >
+              Calculadora
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn nav-tab-cta ${activeTab === 'booking' ? 'active' : ''}`}
+              onClick={() => handleTabChange('booking')}
+            >
+              Reservar cita <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </nav>
         </div>
-      </section>
 
-      <section id="experiencia" className="experience-strip">
-        <div><Sparkles /><span><strong>Diseño personalizado</strong>Elige cada detalle de tu set</span></div>
-        <div><ShieldCheck /><span><strong>Precio transparente</strong>Sin sorpresas al reservar</span></div>
-        <div><CalendarDays /><span><strong>Agenda simple</strong>Tu horario en pocos pasos</span></div>
-      </section>
+        {/* Mobile Horizontal Tabs */}
+        <div className="mobile-tabs-bar" role="tablist" aria-label="Pestañas móviles">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'inicio'}
+            className={`mobile-tab-btn ${activeTab === 'inicio' ? 'active' : ''}`}
+            onClick={() => handleTabChange('inicio')}
+          >
+            Inicio
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'experiencia'}
+            className={`mobile-tab-btn ${activeTab === 'experiencia' ? 'active' : ''}`}
+            onClick={() => handleTabChange('experiencia')}
+          >
+            Experiencia
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'galeria'}
+            className={`mobile-tab-btn ${activeTab === 'galeria' ? 'active' : ''}`}
+            onClick={() => handleTabChange('galeria')}
+          >
+            Galería
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'calculadora'}
+            className={`mobile-tab-btn ${activeTab === 'calculadora' ? 'active' : ''}`}
+            onClick={() => handleTabChange('calculadora')}
+          >
+            Calculadora
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'booking'}
+            className={`mobile-tab-btn mobile-tab-cta ${activeTab === 'booking' ? 'active' : ''}`}
+            onClick={() => handleTabChange('booking')}
+          >
+            Reservar
+          </button>
+        </div>
+      </header>
 
-      {designExamples.length > 0 && (
-        <section id="galeria" className="inspiration-section" aria-labelledby="inspiration-title">
-          <div className="inspiration-heading">
-            <div><p className="eyebrow">Trabajos realizados</p><h2 id="inspiration-title">Elige uno y lo replicamos</h2><p>¿No quieres configurar cada detalle? Escoge una referencia, reserva y listo.</p></div>
-            <div className="carousel-controls">
-              <button type="button" aria-label="Ver diseños anteriores" onClick={() => galleryRef.current?.scrollBy({ left: -360, behavior: 'smooth' })}><ChevronLeft /></button>
-              <button type="button" aria-label="Ver más diseños" onClick={() => galleryRef.current?.scrollBy({ left: 360, behavior: 'smooth' })}><ChevronRight /></button>
+      {/* Main Tab Views */}
+      <div className="flex-1">
+        {/* TAB 1: INICIO (Hero View Only - ZERO CONTENT BELOW) */}
+        {activeTab === 'inicio' && (
+          <section id="inicio" className="hero hero-tab-view relative isolate px-5 py-6 sm:px-10 lg:px-16">
+            <div className="marble absolute inset-0 -z-20" />
+            <ShaderBackdrop />
+            <div className="blush-orb absolute -right-24 top-12 -z-10 h-96 w-96 rounded-full" />
+            <div className="gold-orb" aria-hidden="true" />
+
+            <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.06fr_.94fr] lg:items-center">
+              <div>
+                <p className="eyebrow">Nail atelier · Diseño a tu medida</p>
+                <h1 className="hero-title mt-4">
+                  Tus uñas,
+                  <span>tu firma.</span>
+                </h1>
+                <p className="mt-6 max-w-xl text-base leading-7 text-[#5f5651] sm:text-lg">
+                  Diseña tu set, conoce el precio al instante y reserva el momento perfecto para ti.
+                </p>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    className="gold-button"
+                    onClick={() => handleTabChange('calculadora')}
+                  >
+                    Crear mi set <WandSparkles />
+                  </button>
+                  <button
+                    type="button"
+                    className="soft-button"
+                    onClick={() => handleTabChange('booking')}
+                  >
+                    <CalendarDays /> Ver disponibilidad
+                  </button>
+                </div>
+                <div className="hero-proof">
+                  <div className="avatar-stack"><span>V</span><span>P</span><span>✿</span></div>
+                  <div><div className="stars"><Star /><Star /><Star /><Star /><Star /></div><p>Detalles impecables. Experiencia personalizada.</p></div>
+                </div>
+              </div>
+
+              <LiquidGlassHero
+                currentShape={shape}
+                onSelectShape={(newShape) => setShape(newShape)}
+                currentLength={length}
+                onSelectLength={(newLength) => setLength(newLength)}
+                currentTechnique={technique}
+                onSelectTechnique={(newTech) => setTechnique(newTech)}
+                availableTechniques={displayTechniques}
+                totalPrice={total}
+                anchorPrice={anchorTotal}
+                discountAmount={discountAmount}
+                formatMoney={formatMoney}
+                onStartCustomizing={() => handleTabChange('calculadora')}
+              />
             </div>
-          </div>
-          <div className="design-carousel" ref={galleryRef}>
-            {designExamples.map((item) => {
-              const anchorPrice = getAnchorPrice(item.price);
-              return (
-                <article key={item.id} className="design-card">
-                  <img src={item.imageData} alt={item.title} loading="lazy" />
-                  <div className="design-card-content">
-                    <div className="design-card-header">
-                      <h3>{item.title}</h3>
-                      <div className="flex flex-col items-end">
-                        <span className="line-through text-xs text-[#9c8a82]">{formatMoney(anchorPrice)}</span>
-                        <span className="design-tag">{formatMoney(item.price)}</span>
-                      </div>
-                    </div>
-                    <p>{item.description || 'Set de catálogo listo para replicar con técnica y acabado profesional.'}</p>
-                    <button type="button" className="gold-button w-full justify-center" onClick={() => replicateDesign(item)}>
-                      Replicar este set <ArrowRight />
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
-      <section id="calculadora" className="builder-section">
+        {/* TAB 2: EXPERIENCIA */}
+        {activeTab === 'experiencia' && (
+          <div className="tab-view-container">
+            <section id="experiencia" className="px-5 py-12 sm:px-10 lg:px-16 max-w-7xl mx-auto flex-1">
+              <div className="section-heading text-center max-w-3xl mx-auto mb-12">
+                <p className="eyebrow">Experiencia Atelier</p>
+                <h2>El lujo está en los detalles</h2>
+                <p>Una experiencia creada para que cada elección se sienta personal, impecable y segura.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div className="experience-feature-card">
+                  <div className="experience-icon-badge"><Sparkles /></div>
+                  <h3>Diseño Personalizado</h3>
+                  <p>Cada set es una obra única. Selecciona técnica, largo milimétrico, curvatura y decoraciones exclusivas.</p>
+                </div>
+                <div className="experience-feature-card">
+                  <div className="experience-icon-badge"><ShieldCheck /></div>
+                  <h3>Bioseguridad Total</h3>
+                  <p>Herramientas esterilizadas bajo normas estrictas, insumos descartables por clienta y ambiente seguro.</p>
+                </div>
+                <div className="experience-feature-card">
+                  <div className="experience-icon-badge"><Heart /></div>
+                  <h3>Manicura Rusa</h3>
+                  <p>Tratamiento profundo de cutículas y nivelación anatómica para un acabado limpio que dura hasta 4 semanas.</p>
+                </div>
+                <div className="experience-feature-card">
+                  <div className="experience-icon-badge"><Clock3 /></div>
+                  <h3>Agenda en Vivo</h3>
+                  <p>Citas exclusivas sin esperas ni sobrecupos. Selecciona tu horario disponible y confirma por WhatsApp.</p>
+                </div>
+              </div>
+
+              <div className="experience-strip mb-12">
+                <div><Sparkles /><span><strong>Diseño personalizado</strong>Elige cada detalle de tu set</span></div>
+                <div><ShieldCheck /><span><strong>Precio transparente</strong>Sin sorpresas al reservar</span></div>
+                <div><CalendarDays /><span><strong>Agenda simple</strong>Tu horario en pocos pasos</span></div>
+              </div>
+
+              <div className="closing-section mb-10">
+                <div><p className="eyebrow">{catalog.businessName}</p><h2>El lujo está<br />en los detalles.</h2></div>
+                <div className="closing-note"><span>✿</span><p>Una experiencia creada para que cada elección se sienta personal, clara y especial.</p></div>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-4 py-4">
+                <button type="button" className="gold-button" onClick={() => handleTabChange('calculadora')}>
+                  Cotizar mi set en la calculadora <ArrowRight />
+                </button>
+                <button type="button" className="soft-button" onClick={() => handleTabChange('booking')}>
+                  <CalendarDays /> Ver disponibilidad en agenda
+                </button>
+              </div>
+            </section>
+
+            <footer>
+              <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
+              <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
+            </footer>
+          </div>
+        )}
+
+        {/* TAB 3: GALERIA */}
+        {activeTab === 'galeria' && (
+          <div className="tab-view-container">
+            <section id="galeria" className="inspiration-section px-5 py-12 sm:px-10 lg:px-16 max-w-7xl mx-auto flex-1" aria-labelledby="inspiration-title">
+              <div className="inspiration-heading">
+                <div><p className="eyebrow">Trabajos realizados</p><h2 id="inspiration-title">Elige uno y lo replicamos</h2><p>¿No quieres configurar cada detalle? Escoge una referencia, reserva y listo.</p></div>
+                <div className="carousel-controls">
+                  <button type="button" aria-label="Ver diseños anteriores" onClick={() => galleryRef.current?.scrollBy({ left: -360, behavior: 'smooth' })}><ChevronLeft /></button>
+                  <button type="button" aria-label="Ver más diseños" onClick={() => galleryRef.current?.scrollBy({ left: 360, behavior: 'smooth' })}><ChevronRight /></button>
+                </div>
+              </div>
+              {designExamples.length > 0 ? (
+                <div className="design-carousel" ref={galleryRef}>
+                  {designExamples.map((item) => {
+                    const anchorPrice = getAnchorPrice(item.price);
+                    return (
+                      <article key={item.id} className="design-card">
+                        <img src={item.imageData} alt={item.title} loading="lazy" />
+                        <div className="design-card-content">
+                          <div className="design-card-header">
+                            <h3>{item.title}</h3>
+                            <div className="flex flex-col items-end">
+                              <span className="line-through text-xs text-[#9c8a82]">{formatMoney(anchorPrice)}</span>
+                              <span className="design-tag">{formatMoney(item.price)}</span>
+                            </div>
+                          </div>
+                          <p>{item.description || 'Set de catálogo listo para replicar con técnica y acabado profesional.'}</p>
+                          <button type="button" className="gold-button w-full justify-center" onClick={() => replicateDesign(item)}>
+                            Replicar este set <ArrowRight />
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-center py-12 text-[#8c7a72]">No hay diseños cargados en este momento.</p>
+              )}
+            </section>
+
+            <footer>
+              <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
+              <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
+            </footer>
+          </div>
+        )}
+
+        {/* TAB 4: CALCULADORA */}
+        {activeTab === 'calculadora' && (
+          <div className="tab-view-container">
+            <section id="calculadora" className="builder-section flex-1">
         <div className="section-heading" data-tour="intro">
           <p className="eyebrow">Tu set, a tu manera</p>
           <h2>Diseña y cotiza</h2>
@@ -693,90 +907,96 @@ export default function Home() {
         </div>
       </section>
 
-      {stage === 'booking' && (
-        <section id="booking" className="booking-section">
-          <div className="booking-header">
-            <div>
-              <p className="eyebrow">Tu momento</p>
-              <h2>Agenda tu cita</h2>
-              <p>{selectedDesign ? `Reservando “${selectedDesign.title}”. Completa tus datos y elige un horario.` : 'Elige una fecha disponible y el horario que mejor te quede.'}</p>
-            </div>
-            <div className="booking-total">
-              <span>{discountAmount > 0 ? 'Total con beneficio web' : 'Tu set'}</span>
-              {discountAmount > 0 && <small className="booking-anchor-crossed">{formatMoney(anchorTotal)}</small>}
-              <strong>{formatMoney(total)}</strong>
-            </div>
+            <footer>
+              <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
+              <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
+            </footer>
+
+            <FloatingSummaryBar
+              summary={summary}
+              total={total}
+              anchorTotal={anchorTotal}
+              discountAmount={discountAmount}
+              formatMoney={formatMoney}
+              hasTechnique={Boolean(technique)}
+              hasSelectedDesign={Boolean(selectedDesign)}
+              onNavigateToBooking={goToBooking}
+              onCopyQuote={handleCopyQuote}
+              onReset={reset}
+              copiedQuote={copiedQuote}
+              stage={stage}
+            />
           </div>
-          <div className="booking-grid">
-            <div className="booking-form" data-tour="client-data">
-              <label htmlFor="name">Nombre de la clienta</label>
-              <Input id="name" value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Tu nombre completo" className="booking-input" autoComplete="name" />
-              <label htmlFor="phone">Teléfono</label>
-              <Input id="phone" value={clientPhone} onChange={(event) => setClientPhone(event.target.value)} placeholder="Tu número de contacto" className="booking-input" inputMode="tel" autoComplete="tel" />
-              <div className="mini-summary"><span><Gem /></span><div><strong>{summary[0]}</strong><p>{summary.slice(1, 4).join(' · ')}{summary.length > 4 ? ` · +${summary.length - 4} más` : ''}</p></div></div>
-              <button type="button" className="back-link" onClick={() => { setSelectedDesign(null); setStage('design'); document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' }); }}>← {selectedDesign ? 'Prefiero personalizarlo' : 'Editar mi diseño'}</button>
-            </div>
-            <div className="calendar-panel" data-tour="calendar">
-              <Calendar
-                mode="single"
-                locale={es}
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                disabled={(date) => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  return date < today || date.getDay() === 0 || isFullyBooked(date);
-                }}
-                modifiers={{ fullyBooked: isFullyBooked }}
-                modifiersClassNames={{ fullyBooked: 'fully-booked-day' }}
-                className="booking-calendar"
-                classNames={{
-                  month_grid: 'w-full border-collapse',
-                  day: 'relative aspect-square h-full w-full rounded-full p-0 text-center',
-                  today: 'rounded-full bg-[#f8e7eb] text-[#8d4b60]',
-                }}
-              />
-              <div className="hours-panel">
-                <div className="live-schedule-note"><i /> Agenda en vivo</div>
-                <div className="hours-title"><Clock3 /><span><strong>{selectedDate ? 'Horarios disponibles' : 'Selecciona una fecha'}</strong><small>{selectedDate ? formatBookingDatePEN(selectedDate) : 'Domingos permanecemos cerradas'}</small></span></div>
-                {selectedDate && <div className="time-grid">{times.map((time) => { const unavailable = occupied.includes(time); return <button key={time} type="button" disabled={unavailable || loadingSlots} className={selectedTime === time ? 'selected' : ''} onClick={() => setSelectedTime(time)}>{time}<small>{unavailable ? 'Ocupado' : 'Disponible'}</small></button>; })}</div>}
-                {selectedDate && times.length > 0 && times.every((time) => occupied.includes(time)) && <p className="fully-booked-message">Este día ya está completo. Selecciona otra fecha disponible.</p>}
+        )}
+
+        {/* TAB 5: RESERVAR CITA */}
+        {activeTab === 'booking' && (
+          <div className="tab-view-container">
+            <section id="booking" className="booking-section flex-1">
+              <div className="booking-header">
+                <div>
+                  <p className="eyebrow">Tu momento</p>
+                  <h2>Agenda tu cita</h2>
+                  <p>{selectedDesign ? `Reservando “${selectedDesign.title}”. Completa tus datos y elige un horario.` : 'Elige una fecha disponible y el horario que mejor te quede.'}</p>
+                </div>
+                <div className="booking-total">
+                  <span>{discountAmount > 0 ? 'Total con beneficio web' : 'Tu set'}</span>
+                  {discountAmount > 0 && <small className="booking-anchor-crossed">{formatMoney(anchorTotal)}</small>}
+                  <strong>{formatMoney(total)}</strong>
+                </div>
               </div>
-            </div>
+              <div className="booking-grid">
+                <div className="booking-form" data-tour="client-data">
+                  <label htmlFor="name">Nombre de la clienta</label>
+                  <Input id="name" value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="Tu nombre completo" className="booking-input" autoComplete="name" />
+                  <label htmlFor="phone">Teléfono</label>
+                  <Input id="phone" value={clientPhone} onChange={(event) => setClientPhone(event.target.value)} placeholder="Tu número de contacto" className="booking-input" inputMode="tel" autoComplete="tel" />
+                  <div className="mini-summary"><span><Gem /></span><div><strong>{summary[0]}</strong><p>{summary.slice(1, 4).join(' · ')}{summary.length > 4 ? ` · +${summary.length - 4} más` : ''}</p></div></div>
+                  <button type="button" className="back-link" onClick={() => { setSelectedDesign(null); setStage('design'); handleTabChange('calculadora'); }}>← {selectedDesign ? 'Prefiero personalizarlo' : 'Editar mi diseño'}</button>
+                </div>
+                <div className="calendar-panel" data-tour="calendar">
+                  <Calendar
+                    mode="single"
+                    locale={es}
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return date < today || date.getDay() === 0 || isFullyBooked(date);
+                    }}
+                    modifiers={{ fullyBooked: isFullyBooked }}
+                    modifiersClassNames={{ fullyBooked: 'fully-booked-day' }}
+                    className="booking-calendar"
+                    classNames={{
+                      month_grid: 'w-full border-collapse',
+                      day: 'relative aspect-square h-full w-full rounded-full p-0 text-center',
+                      today: 'rounded-full bg-[#f8e7eb] text-[#8d4b60]',
+                    }}
+                  />
+                  <div className="hours-panel">
+                    <div className="live-schedule-note"><i /> Agenda en vivo</div>
+                    <div className="hours-title"><Clock3 /><span><strong>{selectedDate ? 'Horarios disponibles' : 'Selecciona una fecha'}</strong><small>{selectedDate ? formatBookingDatePEN(selectedDate) : 'Domingos permanecemos cerradas'}</small></span></div>
+                    {selectedDate && <div className="time-grid">{times.map((time) => { const unavailable = occupied.includes(time); return <button key={time} type="button" disabled={unavailable || loadingSlots} className={selectedTime === time ? 'selected' : ''} onClick={() => setSelectedTime(time)}>{time}<small>{unavailable ? 'Ocupado' : 'Disponible'}</small></button>; })}</div>}
+                    {selectedDate && times.length > 0 && times.every((time) => occupied.includes(time)) && <p className="fully-booked-message">Este día ya está completo. Selecciona otra fecha disponible.</p>}
+                  </div>
+                </div>
+              </div>
+              {error && <p className="booking-error" role="alert">{error}</p>}
+              {confirmed && <p className="booking-success"><Check /> Cita guardada. Abriendo WhatsApp…</p>}
+              <div className="booking-actions" data-tour="confirm">
+                <Button variant="outline" className="clear-booking" onClick={reset}><Trash2 /> Limpiar todo</Button>
+                <Button className="whatsapp-button" onClick={confirmBooking} disabled={submitting || confirmed || !authReady || catalogLoading}>{submitting ? 'Guardando cita…' : 'Guardar y confirmar por WhatsApp'} <MessageCircle /></Button>
+              </div>
+            </section>
+
+            <footer>
+              <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
+              <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
+            </footer>
           </div>
-          {error && <p className="booking-error" role="alert">{error}</p>}
-          {confirmed && <p className="booking-success"><Check /> Cita guardada. Abriendo WhatsApp…</p>}
-          <div className="booking-actions" data-tour="confirm">
-            <Button variant="outline" className="clear-booking" onClick={reset}><Trash2 /> Limpiar todo</Button>
-            <Button className="whatsapp-button" onClick={confirmBooking} disabled={submitting || confirmed || !authReady || catalogLoading}>{submitting ? 'Guardando cita…' : 'Guardar y confirmar por WhatsApp'} <MessageCircle /></Button>
-          </div>
-        </section>
-      )}
-
-      <section className="closing-section">
-        <div><p className="eyebrow">{catalog.businessName}</p><h2>El lujo está<br />en los detalles.</h2></div>
-        <div className="closing-note"><span>✿</span><p>Una experiencia creada para que cada elección se sienta personal, clara y especial.</p></div>
-      </section>
-
-      <footer>
-        <p>Lunes a viernes · {catalog.schedule.weekdays.join(', ')}<br />Sábado · {catalog.schedule.saturday.join(', ')} · Domingo cerrado</p>
-        <a className="footer-whatsapp" href={`https://wa.me/${catalog.whatsapp}`}><MessageCircle /> WhatsApp</a>
-      </footer>
-
-      <FloatingSummaryBar
-        summary={summary}
-        total={total}
-        anchorTotal={anchorTotal}
-        discountAmount={discountAmount}
-        formatMoney={formatMoney}
-        hasTechnique={Boolean(technique)}
-        hasSelectedDesign={Boolean(selectedDesign)}
-        onNavigateToBooking={goToBooking}
-        onCopyQuote={handleCopyQuote}
-        onReset={reset}
-        copiedQuote={copiedQuote}
-        stage={stage}
-      />
+        )}
+      </div>
 
       <ChatAssistant
         catalog={catalog}
@@ -784,12 +1004,15 @@ export default function Home() {
         total={total}
         onNavigateToBooking={goToBooking}
         onNavigateToGallery={() => {
-          galleryRef.current?.scrollIntoView({ behavior: 'smooth' });
+          handleTabChange('galeria');
         }}
         onNavigateToCalculator={() => {
-          document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' });
+          handleTabChange('calculadora');
         }}
-        onStartTour={() => setWizardStep(0)}
+        onStartTour={() => {
+          handleTabChange('calculadora');
+          setWizardStep(0);
+        }}
       />
 
       {wizardStep !== null && (
