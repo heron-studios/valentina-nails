@@ -508,19 +508,6 @@ export default function Home() {
       {/* Atelier Global Tab Header */}
       <header className="atelier-header">
         <div className="atelier-nav">
-          <button
-            type="button"
-            className="brand-lockup"
-            onClick={() => handleTabChange('inicio')}
-            aria-label="Ir a Inicio"
-          >
-            <span className="brand-mark">V</span>
-            <span className="brand-text">
-              <strong>{catalog.businessName || 'Valentina Nails'}</strong>
-              <small>Nail Atelier</small>
-            </span>
-          </button>
-
           {/* Desktop Tab Links */}
           <nav className="nav-tab-links" aria-label="Navegación principal">
             <button
