@@ -109,10 +109,11 @@ svg { stroke-width: 1.7; }
 .hero-proof p { margin: .2rem 0 0; color: #746a65; font-size: .72rem; }
 .hero-art {
   position: relative;
-  min-height: 465px;
+  width: 100%;
+  aspect-ratio: 16 / 9.8;
   overflow: hidden;
   border: 1.5px solid rgba(212, 175, 101, .55);
-  border-radius: 44% 44% 1.8rem 1.8rem;
+  border-radius: 2.2rem;
   background: #eadbd6;
   box-shadow:
     0 40px 100px rgba(77, 48, 38, .18),
@@ -162,7 +163,48 @@ svg { stroke-width: 1.7; }
   initial-value: 0deg;
   inherits: false;
 }
-.hero-art img { width: 100%; height: 100%; min-height: 465px; object-fit: cover; object-position: 61% center; }
+.liquid-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.liquid-image-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+  transition: opacity .35s ease;
+}
+.liquid-image-canvas:active {
+  cursor: grabbing;
+}
+.liquid-image-canvas.is-loading {
+  opacity: 0;
+  pointer-events: none;
+}
+.liquid-image-canvas.is-ready {
+  opacity: 1;
+}
+.liquid-image-fallback {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  border-radius: inherit;
+  transition: opacity .35s ease;
+}
+.liquid-image-fallback.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+}
 .hero-price {
   position: absolute;
   right: 1.3rem;
@@ -1000,8 +1042,10 @@ footer p { margin: 0; text-align: left; font-size: .63rem; line-height: 1.7; }
 @media (max-width: 520px) {
   .gold-button, .soft-button { width: 100%; }
   .hero { padding-left: 1.1rem; padding-right: 1.1rem; }
-  .hero-art { min-height: 285px; }
-  .hero-art img { min-height: 285px; }
+  .hero-art { min-height: unset; aspect-ratio: 16 / 9.5; border-radius: 1.5rem; }
+  .hero-price { right: .75rem; bottom: .75rem; padding: .4rem .75rem; }
+  .hero-price span { font-size: .55rem; }
+  .hero-price strong { font-size: 1.15rem; }
   .experience-strip { margin-left: .7rem; margin-right: .7rem; }
   .step-card { border-radius: 1.25rem; padding: 1rem; }
   .step-title { align-items: flex-start; gap: .7rem; }
