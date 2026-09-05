@@ -782,6 +782,13 @@ function AIAssistantAdmin({
     preview: string;
   }> = [
     {
+      id: 'prici_sweet_expert',
+      title: 'Prici (Dulce & Vendedora Especialista)',
+      subtitle: 'Linda, dulce, cariñosa y experta en ventas de uñas',
+      icon: '💖',
+      preview: '«¡Hola mi reina! 💖 Soy Prici. Te asesoro con todo el cariño para elegir el set que mejor estilice tus manos y aproveches nuestras promos.»',
+    },
+    {
       id: 'atelier_luxury',
       title: 'Atelier Luxury',
       subtitle: 'Exclusiva & Alta Costura',

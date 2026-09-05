@@ -88,7 +88,13 @@ export function generateAIAppointmentAdvice(params: GenerateAdviceParams): AIApp
 
   // 1. GREETING ADAPTED TO PERSONALITY & VARIANTS
   let clientGreeting = '';
-  if (personality === 'warm_friendly') {
+  if (personality === 'prici_sweet_expert') {
+    const priciGreetings = [
+      `¡Hola hermosa ${name}! 💖 Soy ${botName}, tu especialista de uñas en Valentina Nails. ¡Me fascinó tu elección! Analicé cada detalle de tu set para darte mis mejores recomendaciones de experta.`,
+      `¡Bienvenida bella ${name}! 🌸 Soy ${botName}. Tu set tiene un balance divino que va a estilizar tus manos al máximo. Aquí tienes mi consultoría especial preparada con todo mi cariño.`,
+    ];
+    clientGreeting = pickOne(priciGreetings);
+  } else if (personality === 'warm_friendly') {
     const warmGreetings = [
       `¡Hola hermosa ${name}! 🌸 Soy ${botName}. ¡Qué emoción acompañarte en tu cita! Hemos preparado con mucho amor los detalles y consejos para que tus uñitas luzcan soñadas.`,
       `¡Bienvenida bella ${name}! 💖 Soy ${botName}. Tu elección de diseño nos tiene enamoradas en el atelier. Aquí tienes un análisis especial pensado solo para ti.`,

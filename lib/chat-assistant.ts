@@ -69,6 +69,8 @@ function formatWithPersonality(
   _botName: string
 ): string {
   switch (personality) {
+    case 'prici_sweet_expert':
+      return `${text}\n\n💖 *Con amor, Prici · Tu especialista y asesora en Valentina Nails*`;
     case 'warm_friendly':
       return `${text}\n\n🌸 *¡Cuidamos cada detalle de tus uñitas con todo el cariño!*`;
     case 'technical_expert':
@@ -90,8 +92,8 @@ export function generateLocalBotResponse(params: {
 }): { answer: string; action?: ChatAction; suggestions: string[] } {
   const { question, catalog, summary, total, aiConfig = DEFAULT_AI_CONFIG } = params;
   const q = question.toLowerCase().trim();
-  const personality = aiConfig.personality || 'atelier_luxury';
-  const botName = aiConfig.botName || 'Valentina Atelier IA';
+  const personality = aiConfig.personality || 'prici_sweet_expert';
+  const botName = aiConfig.botName || 'Prici';
   const customRules = aiConfig.customRules || DEFAULT_AI_CONFIG.customRules;
 
   // Initial / empty prompt
@@ -103,9 +105,9 @@ export function generateLocalBotResponse(params: {
       };
     }
     const greetings = [
-      `¡Hola! Soy ${botName} de Valentina Nails by Priscila. Estoy aquí para resolver tus dudas sobre técnicas, precios en Soles, decoraciones, horarios y cómo agendar tu cita.`,
-      `¡Bienvenida a Valentina Nails! Soy ${botName}. Cuéntame qué diseño tienes en mente o permíteme asesorarte sobre técnicas, precios actuales y disponibilidad.`,
-      `¡Un gusto saludarte! En Valentina Nails estamos listas para crear un set excepcional. ¿Deseas cotizar, conocer nuestras técnicas o agendar tu fecha?`,
+      `¡Hola hermosa! 💖 Soy ${botName}, tu especialista de uñas en Valentina Nails. Estoy aquí para recomendarte el set perfecto, resolver tus dudas sobre precios en Soles y ayudarte a agendar tu cita soñada.`,
+      `¡Bienvenida hermosa! 🌸 Soy ${botName}. Cuéntame qué diseño tienes en mente o permíteme asesorarte para que tus manos luzcan espectaculares.`,
+      `¡Hola mi reina! ✨ Soy ${botName}. Estamos listas para crear un set que te va a fascinar. ¿Deseas cotizar, conocer técnicas en tendencia o apartar tu fecha?`,
     ];
     return {
       answer: pickVariant(greetings),
@@ -115,6 +117,17 @@ export function generateLocalBotResponse(params: {
 
   // Greeting variations (hola, buenas, etc.)
   if (q === 'hola' || q === 'buenas' || q === 'buenos dias' || q === 'buenas tardes' || q === 'buenas noches') {
+    if (personality === 'prici_sweet_expert') {
+      const priciGreetings = [
+        `¡Hola mi reina! 💖 Soy ${botName}, tu especialista de uñas en Valentina Nails. ¡Qué alegría tenerte aquí! Cuéntame, ¿qué diseño soñado tienes en mente o quieres que te recomiende lo más top para que tus manos luzcan increíbles?`,
+        `¡Bienvenida hermosa! 🌸 Soy ${botName}. Me encanta consentir a mis clientas y ayudarlas a elegir la mejor técnica con acabados divinos y súper duraderos. ¿Te gustaría cotizar, ver tendencias o apartar tu horario?`,
+        `¡Hola bella! ✨ Soy ${botName}, tu aliada y experta en uñas. Estoy aquí para recomendarte el largo, silueta y decoraciones que mejor te favorezcan, y ayudarte a agendar con la mejor promo web.`,
+      ];
+      return {
+        answer: pickVariant(priciGreetings),
+        suggestions: ['¿Qué técnica me conviene?', '¿Cuáles son los horarios?', '¿Cuál es mi precio?'],
+      };
+    }
     if (personality === 'warm_friendly') {
       const friendlyGreetings = [
         `¡Hola hermosa! 🌸 Soy ${botName}. Qué alegría tenerte aquí. Cuéntame, ¿qué estilo de uñitas te gustaría lucir o cómo te puedo consentir hoy?`,

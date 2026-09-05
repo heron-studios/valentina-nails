@@ -61,25 +61,31 @@ test('isStepCompleted accurately identifies completed stages', () => {
 });
 
 // -------------------------------------------------------------
-// 2. AI CONFIGURATION & NORMALIZATION TESTS
+// 2. AI CONFIGURATION & NORMALIZATION TESTS (PRICI BOT)
 // -------------------------------------------------------------
 
-test('normalizeAIConfig falls back to defaults when input is empty or null', () => {
+test('DEFAULT_AI_CONFIG is named Prici with sweet expert seller personality', () => {
+  assert.equal(DEFAULT_AI_CONFIG.botName, 'Prici');
+  assert.equal(DEFAULT_AI_CONFIG.personality, 'prici_sweet_expert');
+  assert.ok(DEFAULT_AI_CONFIG.welcomeMessage.includes('Prici'));
+});
+
+test('normalizeAIConfig falls back to Prici defaults when input is empty or null', () => {
   const config = normalizeAIConfig(null);
-  assert.equal(config.botName, DEFAULT_AI_CONFIG.botName);
-  assert.equal(config.personality, 'atelier_luxury');
+  assert.equal(config.botName, 'Prici');
+  assert.equal(config.personality, 'prici_sweet_expert');
   assert.ok(config.customRules.length > 0);
 });
 
 test('normalizeAIConfig preserves custom salon rules and personality', () => {
   const custom: Partial<AIConfig> = {
-    botName: 'Priscila Master Bot',
-    personality: 'technical_expert',
+    botName: 'Prici',
+    personality: 'prici_sweet_expert',
     customRules: 'Estacionamiento privado gratuito en calle Real 123. Aceptamos Yape y Plin.',
   };
   const normalized = normalizeAIConfig(custom);
-  assert.equal(normalized.botName, 'Priscila Master Bot');
-  assert.equal(normalized.personality, 'technical_expert');
+  assert.equal(normalized.botName, 'Prici');
+  assert.equal(normalized.personality, 'prici_sweet_expert');
   assert.ok(normalized.customRules.includes('Estacionamiento privado'));
 });
 

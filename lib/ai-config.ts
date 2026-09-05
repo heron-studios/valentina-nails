@@ -1,4 +1,5 @@
 export type AIPersonality =
+  | 'prici_sweet_expert'
   | 'atelier_luxury'
   | 'warm_friendly'
   | 'technical_expert'
@@ -13,10 +14,10 @@ export interface AIConfig {
 }
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
-  botName: 'Valentina Atelier IA',
-  personality: 'atelier_luxury',
+  botName: 'Prici',
+  personality: 'prici_sweet_expert',
   welcomeMessage:
-    '¡Hola! Soy tu asistente de Valentina Nails by Priscila. Estoy aquí para asesorarte en técnicas de autor, arquitectura ungueal, cotizaciones en Soles y cómo agendar tu cita.',
+    '¡Hola hermosa! 💖 Soy Prici, tu especialista de uñas en Valentina Nails. Estoy aquí para consentirte, recomendarte el set perfecto para tus manos y ayudarte a agendar tu cita soñada.',
   customRules:
     '• Políticas: Garantía de 5 días en todas las aplicaciones de acrílico y rubber gel.\n• Pagos: Aceptamos Yape, Plin, transferencias BCP/Interbank y efectivo sin recargo.\n• Instalaciones: Contamos con estacionamiento seguro para clientas, café de cortesía y ambiente climatizado.\n• Citas: Se recomienda llegar 5 minutos antes. La tolerancia es de 10 minutos.',
   geminiApiKey: '',
@@ -30,6 +31,7 @@ export function normalizeAIConfig(raw: unknown): AIConfig {
   const data = raw as Record<string, unknown>;
 
   const validPersonalities: AIPersonality[] = [
+    'prici_sweet_expert',
     'atelier_luxury',
     'warm_friendly',
     'technical_expert',
