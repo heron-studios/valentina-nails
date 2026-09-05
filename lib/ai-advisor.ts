@@ -1,5 +1,6 @@
 import type { SalonCatalog } from './catalog.ts';
 import { formatMoneyPEN } from './format-utils.ts';
+import { DEFAULT_AI_CONFIG, type AIConfig } from './ai-config.ts';
 
 export type AIAppointmentAdvice = {
   clientGreeting: string;
@@ -42,7 +43,12 @@ export type GenerateAdviceParams = {
   bookingTime?: string;
   catalog: SalonCatalog;
   total: number;
+  aiConfig?: AIConfig;
 };
+
+function pickOne<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 export function generateAIAppointmentAdvice(params: GenerateAdviceParams): AIAppointmentAdvice {
   const {
@@ -52,9 +58,12 @@ export function generateAIAppointmentAdvice(params: GenerateAdviceParams): AIApp
     shapeId = 'almond',
     decorations,
     catalog,
+    aiConfig = DEFAULT_AI_CONFIG,
   } = params;
 
   const name = clientName.trim() || 'Clienta Atelier';
+  const personality = aiConfig.personality || 'atelier_luxury';
+  const botName = aiConfig.botName || 'Valentina Atelier IA';
 
   // Extract catalog entities dynamically
   const technique = catalog.techniques.find((t) => t.id === techniqueId) || catalog.techniques[0];
@@ -77,8 +86,33 @@ export function generateAIAppointmentAdvice(params: GenerateAdviceParams): AIApp
       };
     });
 
-  // 1. GREETING
-  const clientGreeting = `¡Hola ${name}! 🌸 Soy tu Asesora de Estilo IA en Valentina Atelier. Hemos analizado la arquitectura y diseño de tu set para brindarte una consultoría personalizada.`;
+  // 1. GREETING ADAPTED TO PERSONALITY & VARIANTS
+  let clientGreeting = '';
+  if (personality === 'warm_friendly') {
+    const warmGreetings = [
+      `¡Hola hermosa ${name}! 🌸 Soy ${botName}. ¡Qué emoción acompañarte en tu cita! Hemos preparado con mucho amor los detalles y consejos para que tus uñitas luzcan soñadas.`,
+      `¡Bienvenida bella ${name}! 💖 Soy ${botName}. Tu elección de diseño nos tiene enamoradas en el atelier. Aquí tienes un análisis especial pensado solo para ti.`,
+    ];
+    clientGreeting = pickOne(warmGreetings);
+  } else if (personality === 'technical_expert') {
+    const techGreetings = [
+      `Estimada ${name}. Saludos de ${botName}. Hemos generado el informe de ingeniería ungueal y compatibilidad biomecánica para tu combinación seleccionada.`,
+      `Reporte Técnico para ${name} — ${botName}. Evaluación de espesor estructural, polimerización UV y pautas de higiene post-servicio.`,
+    ];
+    clientGreeting = pickOne(techGreetings);
+  } else if (personality === 'vanguard_creative') {
+    const creativeGreetings = [
+      `¡Qué vibe increíble, ${name}! ⚡ Soy ${botName}. Tu set tiene toda la energía de pasarela y alta costura contemporánea. ¡Va a ser un total statement!`,
+      `¡Hola ${name}! 💅 Soy ${botName}. Tu combinación está en el punto exacto de la tendencia vanguardista. Aquí tienes los highlights estéticos de tu diseño.`,
+    ];
+    clientGreeting = pickOne(creativeGreetings);
+  } else {
+    const luxuryGreetings = [
+      `¡Hola ${name}! 🌸 Soy tu Asesora de Estilo IA en Valentina Atelier. Hemos analizado la arquitectura y diseño de tu set para brindarte una consultoría personalizada.`,
+      `Distinguida ${name}, le saluda ${botName}. Es un privilegio presentarle la memoria estética y balance anatómico de su set personalizado en Valentina Atelier.`,
+    ];
+    clientGreeting = pickOne(luxuryGreetings);
+  }
 
   // 2. DESIGN CRITIQUE
   const decorNames = activeDecorations.map((d) => d.name).join(', ');
@@ -93,13 +127,22 @@ export function generateAIAppointmentAdvice(params: GenerateAdviceParams): AIApp
   const highlights: string[] = [];
 
   if (activeDecorations.length > 0) {
-    critiqueDesc += `Los toques artesanales de ${decorNames} aportan textura, tridimensionalidad y un juego de luces dinámico que realza la línea del ápice.`;
+    const decorDescriptions = [
+      `Los toques artesanales de ${decorNames} aportan textura, tridimensionalidad y un juego de luces dinámico que realza la línea del ápice.`,
+      `La inclusión de ${decorNames} crea puntos focales con reflejos ópticos de alta gama que contrastan con la base de ${techniqueName}.`,
+      `Con ${decorNames}, el set adquiere una riqueza táctil y visual sofisticada, elevando el acabado a una pieza de autor.`,
+    ];
+    critiqueDesc += pickOne(decorDescriptions);
     highlights.push(`Contraste de texturas con ${activeDecorations[0].name}.`);
     if (activeDecorations.length > 1) {
       highlights.push(`Transición visual equilibrada entre ${activeDecorations[0].name} y ${activeDecorations[1].name}.`);
     }
   } else {
-    critiqueDesc += `Has optado por una elegancia minimalista y pura, donde el protagonismo radica en la perfección del sellado de cutícula y la uniformidad del tono.`;
+    const minimalDescriptions = [
+      `Has optado por una elegancia minimalista y pura, donde el protagonismo radica en la perfección del sellado de cutícula y la uniformidad del tono.`,
+      `El estilo minimalista elegido resalta la pulcritud de la manicura rusa y la curvatura anatómica sin saturaciones visuales.`,
+    ];
+    critiqueDesc += pickOne(minimalDescriptions);
     highlights.push('Estilo *Clean Luxury* enfocado en pulcritud y curvatura anatómica.');
   }
 
@@ -147,7 +190,6 @@ export function generateAIAppointmentAdvice(params: GenerateAdviceParams): AIApp
   }
 
   // 4. FUTURE COMBINATIONS & SUGGESTIONS (DYNAMIC LIVE CATALOG PRICING!)
-  // Pick complementary decorations from the live catalog that are NOT currently selected
   const availableComplementary = catalog.decorations.filter(
     (d) => d.active && !decorations[d.id],
   );

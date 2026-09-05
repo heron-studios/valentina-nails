@@ -10,7 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "node --experimental-strip-types --test test/*.test.ts",
-    "lint": "oxlint app/page.tsx app/admin-page.tsx components/availability-view.tsx components/booking-success-modal.tsx components/chat-assistant.tsx components/floating-summary-bar.tsx components/liquid-glass-hero.tsx components/lottie-assistant-bot.tsx components/shader-backdrop.tsx components/ui/button.tsx components/ui/calendar.tsx components/ui/input.tsx lib/ai-advisor.ts lib/availability.ts lib/catalog.ts lib/chat-assistant.ts lib/designs.ts lib/firebase.ts lib/format-utils.ts lib/pricing.ts lib/utils.ts src/main.tsx vite.config.ts",
+    "lint": "oxlint app/page.tsx app/admin-page.tsx components/availability-view.tsx components/booking-success-modal.tsx components/chat-assistant.tsx components/floating-summary-bar.tsx components/liquid-glass-hero.tsx components/lottie-assistant-bot.tsx components/shader-backdrop.tsx components/ui/button.tsx components/ui/calendar.tsx components/ui/input.tsx lib/ai-advisor.ts lib/ai-config.ts lib/availability.ts lib/catalog.ts lib/chat-assistant.ts lib/designs.ts lib/firebase.ts lib/format-utils.ts lib/pricing.ts lib/step-validator.ts lib/utils.ts src/main.tsx vite.config.ts",
     "format": "oxfmt"
   },
   "dependencies": {

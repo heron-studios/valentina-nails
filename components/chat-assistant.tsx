@@ -11,7 +11,9 @@ import {
 } from 'lucide-react';
 import { LottieAssistantBot } from '@/components/lottie-assistant-bot';
 import type { SalonCatalog } from '@/lib/catalog';
+import { DEFAULT_AI_CONFIG, type AIConfig } from '@/lib/ai-config';
 import {
+  generateAIAssistantResponse,
   generateLocalBotResponse,
   parseChatFormatting,
   type ChatAction,
@@ -23,6 +25,7 @@ export type ChatAssistantProps = {
   catalog: SalonCatalog;
   summary: string[];
   total: number;
+  aiConfig?: AIConfig;
   onNavigateToBooking?: () => void;
   onNavigateToGallery?: () => void;
   onNavigateToCalculator?: () => void;
@@ -39,6 +42,7 @@ export function ChatAssistant({
   catalog,
   summary,
   total,
+  aiConfig = DEFAULT_AI_CONFIG,
   onNavigateToBooking,
   onNavigateToGallery,
   onNavigateToCalculator,
@@ -47,7 +51,12 @@ export function ChatAssistant({
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    {
+      role: 'assistant',
+      content: aiConfig.welcomeMessage || INITIAL_MESSAGE.content,
+    },
+  ]);
   const [suggestions, setSuggestions] = useState<string[]>([
     '¿Qué técnica me conviene?',
     '¿Cuáles son los horarios?',
@@ -108,7 +117,12 @@ export function ChatAssistant({
   };
 
   const resetChat = () => {
-    setMessages([INITIAL_MESSAGE]);
+    setMessages([
+      {
+        role: 'assistant',
+        content: aiConfig.welcomeMessage || INITIAL_MESSAGE.content,
+      },
+    ]);
     setSuggestions([
       '¿Qué técnica me conviene?',
       '¿Cuáles son los horarios?',
@@ -127,69 +141,76 @@ export function ChatAssistant({
     setText('');
     setSending(true);
 
-    const localResult = generateLocalBotResponse({
-      question,
-      catalog,
-      summary,
-      total,
-    });
-
     try {
-      if (!chatApiUrl) {
-        await new Promise((resolve) => window.setTimeout(resolve, 320));
-        setMessages((current) => [
-          ...current,
-          {
-            role: 'assistant',
-            content: localResult.answer,
-            action: localResult.action,
-            timestamp: Date.now(),
-          },
-        ]);
-        setSuggestions(localResult.suggestions);
-        return;
+      if (chatApiUrl) {
+        const response = await fetch(chatApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: nextMessages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+            context: {
+              selection: summary,
+              estimatedPrice: total,
+              currency: 'PEN',
+            },
+          }),
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as { answer?: string };
+          if (data.answer?.trim()) {
+            setMessages((current) => [
+              ...current,
+              {
+                role: 'assistant',
+                content: data.answer!.trim(),
+                timestamp: Date.now(),
+              },
+            ]);
+            setSuggestions([
+              '¿Cuáles son los horarios?',
+              '¿Cómo agendo cita?',
+              '¿Cuál es mi precio?',
+            ]);
+            return;
+          }
+        }
       }
 
-      const response = await fetch(chatApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: nextMessages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
-          context: {
-            selection: summary,
-            estimatedPrice: total,
-            currency: 'PEN',
-          },
-        }),
+      // Generate response via AI / stochastic engine with aiConfig
+      const aiResult = await generateAIAssistantResponse({
+        question,
+        catalog,
+        summary,
+        total,
+        aiConfig,
       });
-
-      if (!response.ok) throw new Error('El asistente no está disponible en este momento.');
-      const data = (await response.json()) as { answer?: string };
-      const answer = data.answer?.trim() || localResult.answer;
 
       setMessages((current) => [
         ...current,
         {
           role: 'assistant',
-          content: answer,
-          action: localResult.action,
+          content: aiResult.answer,
+          action: aiResult.action,
           timestamp: Date.now(),
         },
       ]);
-      setSuggestions(localResult.suggestions);
+      setSuggestions(aiResult.suggestions);
     } catch {
+      const localResult = generateLocalBotResponse({
+        question,
+        catalog,
+        summary,
+        total,
+        aiConfig,
+      });
+
       setMessages((current) => [
         ...current,
         {
           role: 'assistant',
-          content: `${localResult.answer}\n\nSi deseas una atención 100% personalizada, escríbele directo a Priscila por WhatsApp.`,
-          action: localResult.action || {
-            type: 'whatsapp',
-            label: '💬 Escribir por WhatsApp',
-            url: `https://wa.me/${catalog.whatsapp}?text=${encodeURIComponent(
-              `Hola Priscila, tengo una duda sobre mi set: "${question}"`,
-            )}`,
-          },
+          content: localResult.answer,
+          action: localResult.action,
           timestamp: Date.now(),
         },
       ]);
@@ -212,7 +233,7 @@ export function ChatAssistant({
               <LottieAssistantBot className="w-8 h-8" />
             </span>
             <div className="chat-header-info">
-              <strong>Valentina Nails Atelier</strong>
+              <strong>{aiConfig.botName || 'Valentina Nails Atelier'}</strong>
               <small>
                 <i /> En línea · Asesoría en Soles
               </small>

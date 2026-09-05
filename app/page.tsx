@@ -42,6 +42,8 @@ import { AvailabilityView } from '@/components/availability-view';
 import { BookingSuccessModal } from '@/components/booking-success-modal';
 import { auth, db } from '@/lib/firebase';
 import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/catalog';
+import { DEFAULT_AI_CONFIG, normalizeAIConfig, type AIConfig } from '@/lib/ai-config';
+import { isStepUnlocked, isStepCompleted } from '@/lib/step-validator';
 import { generateAIAppointmentAdvice, type AIAppointmentAdvice } from '@/lib/ai-advisor';
 import {
   formatBookingDatePEN,
@@ -105,6 +107,7 @@ export type ActiveTab = 'inicio' | 'disponibilidad' | 'experiencia' | 'galeria' 
 export default function Home() {
   const [catalog, setCatalog] = useState<SalonCatalog>(() => structuredClone(DEFAULT_CATALOG));
   const [catalogLoading, setCatalogLoading] = useState(true);
+  const [aiConfig, setAiConfig] = useState<AIConfig>(() => structuredClone(DEFAULT_AI_CONFIG));
   const [activeTab, setActiveTab] = useState<ActiveTab>('inicio');
   const [technique, setTechnique] = useState('');
   const [length, setLength] = useState('length-4');
@@ -117,6 +120,8 @@ export default function Home() {
   const [showAll, setShowAll] = useState(false);
   const [stage, setStage] = useState<'design' | 'booking'>('design');
   const [calcStepIndex, setCalcStepIndex] = useState(0);
+
+  const stepState = { technique, shape, length };
 
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
@@ -246,6 +251,12 @@ export default function Home() {
     setCatalog(normalizeCatalog(snapshot.exists() ? snapshot.data() : DEFAULT_CATALOG));
     setCatalogLoading(false);
   }, () => setCatalogLoading(false)), []);
+
+  useEffect(() => onSnapshot(doc(db, 'settings', 'ai_config'), (snapshot) => {
+    if (snapshot.exists()) {
+      setAiConfig(normalizeAIConfig(snapshot.data()));
+    }
+  }), []);
 
   useEffect(() => onAuthStateChanged(auth, async (currentUser) => {
     if (currentUser) {
@@ -397,6 +408,7 @@ export default function Home() {
   const goToBooking = () => {
     if (!technique && !selectedDesign) {
       setError('Por favor elige una técnica base (Acrílico, Gel o Rubber) antes de continuar con tu cita.');
+      setCalcStepIndex(0);
       handleTabChange('calculadora');
       return;
     }
@@ -517,6 +529,7 @@ export default function Home() {
         bookingTime: selectedTime,
         catalog,
         total,
+        aiConfig,
       });
 
       setSuccessAdvice(advice);
@@ -827,19 +840,29 @@ export default function Home() {
             <section id="calculadora" className="px-4 py-1.5 sm:px-8 sm:py-2 lg:px-12 max-w-7xl mx-auto flex-1 w-full flex flex-col justify-between overflow-hidden">
               {/* Step Navigation Bar */}
               <div className="calc-step-nav flex-shrink-0" role="tablist" aria-label="Pasos de personalización">
-                {CALC_STEPS.map((step, idx) => (
-                  <button
-                    key={step.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={calcStepIndex === idx}
-                    className={`calc-step-tab ${calcStepIndex === idx ? 'active' : ''}`}
-                    onClick={() => setCalcStepIndex(idx)}
-                  >
-                    <span className="step-num">{step.num}</span>
-                    <span>{step.label}</span>
-                  </button>
-                ))}
+                {CALC_STEPS.map((step, idx) => {
+                  const isUnlocked = isStepUnlocked(idx, stepState);
+                  const isCompleted = isStepCompleted(idx, stepState);
+                  return (
+                    <button
+                      key={step.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={calcStepIndex === idx}
+                      aria-disabled={!isUnlocked}
+                      disabled={!isUnlocked}
+                      className={`calc-step-tab ${calcStepIndex === idx ? 'active' : ''} ${!isUnlocked ? 'locked' : ''} ${isCompleted ? 'completed' : ''}`}
+                      onClick={() => {
+                        if (isUnlocked) setCalcStepIndex(idx);
+                      }}
+                    >
+                      <span className="step-num">
+                        {isCompleted && calcStepIndex !== idx ? '✓' : step.num}
+                      </span>
+                      <span>{step.label}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Main Studio: Active Step Workspace on Left, Summary Card on Right */}
@@ -860,7 +883,12 @@ export default function Home() {
                               key={item.id}
                               type="button"
                               className={`technique-card ${technique === item.id ? 'selected' : ''}`}
-                              onClick={() => setTechnique(item.id)}
+                              onClick={() => {
+                                setTechnique(item.id);
+                                window.setTimeout(() => {
+                                  setCalcStepIndex((curr) => (curr === 0 ? 1 : curr));
+                                }, 220);
+                              }}
                               aria-pressed={technique === item.id}
                             >
                               <span className="technique-icon">
@@ -1015,7 +1043,7 @@ export default function Home() {
                         className="soft-button text-xs py-1.5 px-3"
                         onClick={() => setCalcStepIndex(calcStepIndex - 1)}
                       >
-                        ← Anterior
+                        ← Anterior ({CALC_STEPS[calcStepIndex - 1].label})
                       </button>
                     ) : <div />}
 
@@ -1023,14 +1051,22 @@ export default function Home() {
                       <button
                         type="button"
                         className="gold-button text-xs py-1.5 px-3.5"
-                        onClick={() => setCalcStepIndex(calcStepIndex + 1)}
+                        disabled={!isStepUnlocked(calcStepIndex + 1, stepState)}
+                        onClick={() => {
+                          if (isStepUnlocked(calcStepIndex + 1, stepState)) {
+                            setCalcStepIndex(calcStepIndex + 1);
+                          }
+                        }}
                       >
-                        Siguiente paso ({CALC_STEPS[calcStepIndex + 1].label}) →
+                        {calcStepIndex === 0 && !technique
+                          ? 'Elige una técnica para avanzar →'
+                          : `Continuar a ${CALC_STEPS[calcStepIndex + 1].label} →`}
                       </button>
                     ) : (
                       <button
                         type="button"
                         className="gold-button text-xs py-1.5 px-3.5"
+                        disabled={!technique}
                         onClick={goToBooking}
                       >
                         Elegir fecha de cita <ArrowRight className="w-3.5 h-3.5" />
@@ -1097,8 +1133,33 @@ export default function Home() {
                       )}
                     </div>
 
-                    <Button className="summary-cta w-full py-2 text-xs" onClick={goToBooking}>
-                      {technique || selectedDesign ? <>Elegir fecha <ArrowRight className="w-3.5 h-3.5" /></> : <>Elegir técnica <ArrowRight className="w-3.5 h-3.5" /></>}
+                    <Button
+                      className="summary-cta w-full py-2 text-xs"
+                      disabled={calcStepIndex === 0 && !technique}
+                      onClick={() => {
+                        if (calcStepIndex === 0 && !technique) {
+                          return;
+                        }
+                        if (calcStepIndex < 3) {
+                          if (isStepUnlocked(calcStepIndex + 1, stepState)) {
+                            setCalcStepIndex(calcStepIndex + 1);
+                          }
+                        } else {
+                          goToBooking();
+                        }
+                      }}
+                    >
+                      {calcStepIndex === 0 && !technique ? (
+                        <>1. Elige una técnica base</>
+                      ) : calcStepIndex === 0 ? (
+                        <>2. Continuar a silueta y largo <ArrowRight className="w-3.5 h-3.5" /></>
+                      ) : calcStepIndex === 1 ? (
+                        <>3. Continuar a diseños <ArrowRight className="w-3.5 h-3.5" /></>
+                      ) : calcStepIndex === 2 ? (
+                        <>4. Ver extras y finalizar <ArrowRight className="w-3.5 h-3.5" /></>
+                      ) : (
+                        <>Confirmar y elegir fecha <ArrowRight className="w-3.5 h-3.5" /></>
+                      )}
                     </Button>
                     <div className="flex items-center gap-2 mt-1">
                       <button
@@ -1400,6 +1461,7 @@ export default function Home() {
         catalog={catalog}
         summary={summary}
         total={total}
+        aiConfig={aiConfig}
         onNavigateToBooking={goToBooking}
         onNavigateToGallery={() => {
           handleTabChange('galeria');

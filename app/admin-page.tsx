@@ -19,6 +19,7 @@ import {
   Save,
   Search,
   Settings2,
+  Sparkles,
   Trash2,
   UserRound,
 } from 'lucide-react';
@@ -40,6 +41,12 @@ import {
   type ShapeItem,
   type TechniqueItem,
 } from '@/lib/catalog';
+import {
+  DEFAULT_AI_CONFIG,
+  normalizeAIConfig,
+  type AIConfig,
+  type AIPersonality,
+} from '@/lib/ai-config';
 import { formatBookingDatePEN, formatMoneyPEN } from '@/lib/format-utils';
 
 const ADMIN_EMAILS = new Set([
@@ -83,6 +90,8 @@ export default function AdminPage() {
   const [authReady, setAuthReady] = useState(false);
   const [draft, setDraft] = useState<SalonCatalog>(() => structuredClone(DEFAULT_CATALOG));
   const [savedCatalog, setSavedCatalog] = useState<SalonCatalog>(() => structuredClone(DEFAULT_CATALOG));
+  const [aiDraft, setAiDraft] = useState<AIConfig>(() => structuredClone(DEFAULT_AI_CONFIG));
+  const [savedAiConfig, setSavedAiConfig] = useState<AIConfig>(() => structuredClone(DEFAULT_AI_CONFIG));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -97,7 +106,8 @@ export default function AdminPage() {
 
   const userEmail = user?.email ?? '';
   const isAdmin = ADMIN_EMAILS.has(userEmail.toLowerCase());
-  const isDirty = JSON.stringify(draft) !== JSON.stringify(savedCatalog);
+  const isAiDirty = JSON.stringify(aiDraft) !== JSON.stringify(savedAiConfig);
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(savedCatalog) || isAiDirty;
   const activeServices = draft.techniques.filter((item) => item.active).length;
   const activeDesigns = draft.decorations.filter((item) => item.active).length;
   const filteredDecorations = draft.decorations.filter((item) => item.name.toLowerCase().includes(decorationSearch.toLowerCase()));
@@ -131,6 +141,12 @@ export default function AdminPage() {
     setSavedCatalog(structuredClone(nextCatalog));
     setLoading(false);
   }, () => setLoading(false)), []);
+
+  useEffect(() => onSnapshot(doc(db, 'settings', 'ai_config'), (snapshot) => {
+    const nextConfig = normalizeAIConfig(snapshot.exists() ? snapshot.data() : DEFAULT_AI_CONFIG);
+    setAiDraft(nextConfig);
+    setSavedAiConfig(structuredClone(nextConfig));
+  }), []);
 
   useEffect(() => onSnapshot(collection(db, 'designs'), (snapshot) => {
     setDesigns(snapshot.docs.map((item) => ({ id: item.id, ...item.data() } as DesignExample)));
@@ -230,10 +246,35 @@ export default function AdminPage() {
         updatedAt: serverTimestamp(),
         updatedBy: userEmail,
       });
+      await setDoc(doc(db, 'settings', 'ai_config'), {
+        ...aiDraft,
+        updatedAt: serverTimestamp(),
+        updatedBy: userEmail,
+      });
       setSavedCatalog(structuredClone(draft));
-      setMessage('Cambios publicados. La página de reservas ya está actualizada.');
+      setSavedAiConfig(structuredClone(aiDraft));
+      setMessage('Cambios publicados. La página de reservas y la IA ya están actualizadas.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se pudieron guardar los cambios.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveAiOnly = async () => {
+    if (!isAdmin) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      await setDoc(doc(db, 'settings', 'ai_config'), {
+        ...aiDraft,
+        updatedAt: serverTimestamp(),
+        updatedBy: userEmail,
+      });
+      setSavedAiConfig(structuredClone(aiDraft));
+      setMessage('Configuración del Asistente IA actualizada con éxito.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No se pudo guardar la configuración de la IA.');
     } finally {
       setSaving(false);
     }
@@ -367,6 +408,7 @@ export default function AdminPage() {
           <TabsTrigger value="services"><Boxes /> Servicios</TabsTrigger>
           <TabsTrigger value="prices"><BadgeDollarSign /> Precios y extras</TabsTrigger>
           <TabsTrigger value="gallery"><ImagePlus /> Galería</TabsTrigger>
+          <TabsTrigger value="ai"><Sparkles /> Asistente IA</TabsTrigger>
         </TabsList>
 
         <TabsContent value="agenda">
@@ -578,9 +620,33 @@ export default function AdminPage() {
             onMessage={setMessage}
           />
         </TabsContent>
+        <TabsContent value="ai">
+          <AIAssistantAdmin
+            config={aiDraft}
+            savedConfig={savedAiConfig}
+            busy={saving}
+            onChange={setAiDraft}
+            onSave={saveAiOnly}
+          />
+        </TabsContent>
       </Tabs>
 
-      <div className={`admin-sticky-save ${isDirty ? 'visible' : ''}`}><p><span /> Tienes cambios sin publicar</p><button type="button" onClick={() => { setDraft(structuredClone(savedCatalog)); setMessage(''); }}><RotateCcw /> Descartar</button><Button className="gold-button" onClick={save} disabled={saving}><Save /> {saving ? 'Publicando…' : 'Publicar cambios'}</Button></div>
+      <div className={`admin-sticky-save ${isDirty ? 'visible' : ''}`}>
+        <p><span /> Tienes cambios sin publicar</p>
+        <button
+          type="button"
+          onClick={() => {
+            setDraft(structuredClone(savedCatalog));
+            setAiDraft(structuredClone(savedAiConfig));
+            setMessage('');
+          }}
+        >
+          <RotateCcw /> Descartar
+        </button>
+        <Button className="gold-button" onClick={save} disabled={saving}>
+          <Save /> {saving ? 'Publicando…' : 'Publicar cambios'}
+        </Button>
+      </div>
     </main>
   );
 }
@@ -687,6 +753,178 @@ function DesignGalleryAdmin({
             </div>
           </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function AIAssistantAdmin({
+  config,
+  savedConfig,
+  busy,
+  onChange,
+  onSave,
+}: {
+  config: AIConfig;
+  savedConfig: AIConfig;
+  busy: boolean;
+  onChange: React.Dispatch<React.SetStateAction<AIConfig>>;
+  onSave: () => void;
+}) {
+  const [showKey, setShowKey] = useState(false);
+  const isAiDirty = JSON.stringify(config) !== JSON.stringify(savedConfig);
+
+  const personalities: Array<{
+    id: AIPersonality;
+    title: string;
+    subtitle: string;
+    icon: string;
+    preview: string;
+  }> = [
+    {
+      id: 'atelier_luxury',
+      title: 'Atelier Luxury',
+      subtitle: 'Exclusiva & Alta Costura',
+      icon: '💎',
+      preview: '«Estimada clienta, diseñamos cada set con estándares de alta costura ungueal y precisión anatómica.»',
+    },
+    {
+      id: 'warm_friendly',
+      title: 'Cálida & Cercana',
+      subtitle: 'Amorosa, Empática y Dulce',
+      icon: '🌸',
+      preview: '«¡Hola bella! Qué alegría saludarte. Vamos a consentir tus uñitas con todo el cariño del mundo.»',
+    },
+    {
+      id: 'technical_expert',
+      title: 'Experta Técnica',
+      subtitle: 'Ingeniería, Química y Bioseguridad',
+      icon: '🔬',
+      preview: '«Evaluación biomecánica: parámetros de polimerización UV, ápice reforzado y sellado de cutícula estéril.»',
+    },
+    {
+      id: 'vanguard_creative',
+      title: 'Vanguardista',
+      subtitle: 'Tendencias de Pasarela & Aesthetic',
+      icon: '⚡',
+      preview: '«¡Qué look tan top! Este set tiene las vibes exactas de pasarela y estilo que van a robar miradas.»',
+    },
+  ];
+
+  return (
+    <section className="admin-card ai-manager">
+      <div className="admin-section-title">
+        <div>
+          <span><Sparkles /></span>
+          <div>
+            <h2>Personalidad y Conocimiento del Asistente IA</h2>
+            <p>
+              Configura el tono de voz, mensaje de bienvenida, reglas del salón (pagos, cochera, garantías) y motor de inteligencia artificial.
+            </p>
+          </div>
+        </div>
+        <Button className="gold-button" onClick={onSave} disabled={busy || !isAiDirty}>
+          <Save /> {busy ? 'Guardando…' : isAiDirty ? 'Guardar Asistente IA' : 'Configuración al día'}
+        </Button>
+      </div>
+
+      <div className="ai-settings-grid">
+        <div className="admin-field-group">
+          <label htmlFor="ai-bot-name">
+            <strong>Nombre del Asistente Virtual</strong>
+            <small>Nombre con el que se identificará ante las clientas en el chat interactivo y sugerencias.</small>
+          </label>
+          <Input
+            id="ai-bot-name"
+            value={config.botName}
+            onChange={(e) => onChange((prev) => ({ ...prev, botName: e.target.value }))}
+            placeholder="Ej. Valentina Atelier IA"
+          />
+        </div>
+
+        <div className="admin-field-group">
+          <div className="admin-group-label">
+            <strong>Personalidad y Tono de Conversación</strong>
+            <small>Define cómo habla la IA, su vocabulario y el estilo con el que interactúa con tus clientas.</small>
+          </div>
+          <div className="ai-personality-grid">
+            {personalities.map((p) => (
+              <button
+                type="button"
+                key={p.id}
+                className={`ai-personality-card ${config.personality === p.id ? 'active' : ''}`}
+                onClick={() => onChange((prev) => ({ ...prev, personality: p.id }))}
+              >
+                <div className="personality-header">
+                  <span className="personality-icon">{p.icon}</span>
+                  <div>
+                    <h4>{p.title}</h4>
+                    <span className="personality-sub">{p.subtitle}</span>
+                  </div>
+                </div>
+                <p className="personality-preview">{p.preview}</p>
+                {config.personality === p.id && (
+                  <span className="personality-badge"><Check className="w-3.5 h-3.5" /> Seleccionada</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="admin-field-group">
+          <label htmlFor="ai-welcome">
+            <strong>Mensaje de Bienvenida Personalizado</strong>
+            <small>El primer mensaje que verá la clienta al abrir el chat asistido.</small>
+          </label>
+          <Textarea
+            id="ai-welcome"
+            rows={3}
+            value={config.welcomeMessage}
+            onChange={(e) => onChange((prev) => ({ ...prev, welcomeMessage: e.target.value }))}
+            placeholder="Escribe el saludo de bienvenida de tu salón…"
+          />
+        </div>
+
+        <div className="admin-field-group">
+          <label htmlFor="ai-rules">
+            <strong>Reglas, Políticas y Datos Clave del Salón</strong>
+            <small>
+              Ingresa información sobre estacionamiento, métodos de pago (Yape, Plin, tarjetas), garantía de días, políticas de puntualidad y amenidades. La IA responderá con estos datos exactos.
+            </small>
+          </label>
+          <Textarea
+            id="ai-rules"
+            rows={5}
+            value={config.customRules}
+            onChange={(e) => onChange((prev) => ({ ...prev, customRules: e.target.value }))}
+            placeholder="• Pagos: Aceptamos Yape, Plin, transferencias y efectivo.&#10;• Garantía: 5 días en aplicaciones.&#10;• Estacionamiento: Gratuito frente al estudio."
+          />
+        </div>
+
+        <div className="admin-field-group ai-gemini-box">
+          <div className="flex items-center justify-between">
+            <label htmlFor="ai-api-key">
+              <strong>Google Gemini API Key (Opcional)</strong>
+              <small>
+                Si ingresas tu clave de Google Gemini, la IA responderá con inteligencia generativa en vivo de última generación. Si lo dejas en blanco, responderá con el motor local estocástico enriquecido sin costo.
+              </small>
+            </label>
+            <button
+              type="button"
+              className="text-xs text-[#94671e] hover:underline flex items-center gap-1"
+              onClick={() => setShowKey(!showKey)}
+            >
+              {showKey ? 'Ocultar clave' : 'Mostrar clave'}
+            </button>
+          </div>
+          <Input
+            id="ai-api-key"
+            type={showKey ? 'text' : 'password'}
+            value={config.geminiApiKey || ''}
+            onChange={(e) => onChange((prev) => ({ ...prev, geminiApiKey: e.target.value }))}
+            placeholder="AIzaSy..."
+          />
+        </div>
       </div>
     </section>
   );

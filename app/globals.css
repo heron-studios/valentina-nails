@@ -356,6 +356,20 @@ svg { stroke-width: 1.7; }
   background: #94671e;
   color: #fff;
 }
+.calc-step-tab.locked {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(0.5);
+}
+.calc-step-tab.completed {
+  border-color: rgba(201, 160, 84, 0.25);
+  color: #4a3b34;
+}
+.calc-step-tab.completed .step-num {
+  background: #2e7d32;
+  color: #ffffff;
+}
 
 .calc-studio-layout {
   display: grid;
@@ -2598,3 +2612,86 @@ footer p { margin: 0; text-align: left; font-size: .63rem; line-height: 1.7; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* Admin AI Assistant Settings */
+.ai-settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+.ai-personality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.ai-personality-card {
+  text-align: left;
+  padding: 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 103, 30, 0.2);
+  background: rgba(255, 255, 255, 0.75);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.ai-personality-card:hover {
+  border-color: rgba(148, 103, 30, 0.45);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+.ai-personality-card.active {
+  border-color: #94671e;
+  background: #fffdf9;
+  box-shadow: 0 4px 16px rgba(148, 103, 30, 0.12);
+  outline: 2px solid #94671e;
+}
+.personality-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.personality-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.personality-header h4 {
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: #2b1f1a;
+  margin: 0;
+}
+.personality-sub {
+  font-size: 0.7rem;
+  color: #8c5d18;
+}
+.personality-preview {
+  font-size: 0.72rem;
+  color: #5c4e47;
+  line-height: 1.35;
+  font-style: italic;
+  background: rgba(248, 244, 238, 0.7);
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.4rem;
+  margin: 0;
+}
+.personality-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #1e7025;
+  background: rgba(30, 112, 37, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  width: fit-content;
+}
+.ai-gemini-box {
+  border-top: 1px dashed rgba(148, 103, 30, 0.2);
+  padding-top: 1rem;
+}
+
