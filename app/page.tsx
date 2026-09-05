@@ -38,6 +38,7 @@ import { ShaderBackdrop } from '@/components/shader-backdrop';
 import { LiquidGlassHero } from '@/components/liquid-glass-hero';
 import { ChatAssistant } from '@/components/chat-assistant';
 import { FloatingSummaryBar } from '@/components/floating-summary-bar';
+import { AvailabilityView } from '@/components/availability-view';
 import { auth, db } from '@/lib/firebase';
 import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/catalog';
 import {
@@ -90,7 +91,7 @@ function Counter({ value, onChange, label, max = 10 }: { value: number; onChange
   );
 }
 
-export type ActiveTab = 'inicio' | 'experiencia' | 'galeria' | 'calculadora' | 'booking';
+export type ActiveTab = 'inicio' | 'disponibilidad' | 'experiencia' | 'galeria' | 'calculadora' | 'booking';
 
 export default function Home() {
   const [catalog, setCatalog] = useState<SalonCatalog>(() => structuredClone(DEFAULT_CATALOG));
@@ -123,7 +124,7 @@ export default function Home() {
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash.replace('#', '');
-      if (['inicio', 'experiencia', 'galeria', 'calculadora', 'booking'].includes(hash)) {
+      if (['inicio', 'disponibilidad', 'experiencia', 'galeria', 'calculadora', 'booking'].includes(hash)) {
         setActiveTab(hash as ActiveTab);
         if (hash === 'booking') setStage('booking');
       }
@@ -390,6 +391,12 @@ export default function Home() {
     handleTabChange('booking');
   };
 
+  const handleSelectSlotAndBook = (date: Date, time: string) => {
+    setSelectedDate(date);
+    setSelectedTime(time);
+    handleTabChange('booking');
+  };
+
   const closeWizard = (startDesign = false) => {
     try {
       window.localStorage.setItem('valentina-client-guide-v1', 'seen');
@@ -513,6 +520,13 @@ export default function Home() {
             </button>
             <button
               type="button"
+              className={`nav-tab-btn ${activeTab === 'disponibilidad' ? 'active' : ''}`}
+              onClick={() => handleTabChange('disponibilidad')}
+            >
+              Disponibilidad
+            </button>
+            <button
+              type="button"
               className={`nav-tab-btn ${activeTab === 'experiencia' ? 'active' : ''}`}
               onClick={() => handleTabChange('experiencia')}
             >
@@ -552,6 +566,15 @@ export default function Home() {
             onClick={() => handleTabChange('inicio')}
           >
             Inicio
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'disponibilidad'}
+            className={`mobile-tab-btn ${activeTab === 'disponibilidad' ? 'active' : ''}`}
+            onClick={() => handleTabChange('disponibilidad')}
+          >
+            Disponibilidad
           </button>
           <button
             type="button"
@@ -623,7 +646,7 @@ export default function Home() {
                   <button
                     type="button"
                     className="soft-button"
-                    onClick={() => handleTabChange('booking')}
+                    onClick={() => handleTabChange('disponibilidad')}
                   >
                     <CalendarDays /> Ver disponibilidad
                   </button>
@@ -652,7 +675,19 @@ export default function Home() {
           </section>
         )}
 
-        {/* TAB 2: EXPERIENCIA */}
+        {/* TAB 2: DISPONIBILIDAD (Calendario en vivo y próximo turno) */}
+        {activeTab === 'disponibilidad' && (
+          <AvailabilityView
+            catalog={catalog}
+            occupiedByDate={occupiedByDate}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            onSelectSlotAndBook={handleSelectSlotAndBook}
+            onGoToBooking={() => handleTabChange('booking')}
+          />
+        )}
+
+        {/* TAB 3: EXPERIENCIA */}
         {activeTab === 'experiencia' && (
           <div className="tab-view-container">
             <section id="experiencia" className="px-5 py-12 sm:px-10 lg:px-16 max-w-7xl mx-auto flex-1">
@@ -700,7 +735,7 @@ export default function Home() {
                 <button type="button" className="gold-button" onClick={() => handleTabChange('calculadora')}>
                   Cotizar mi set en la calculadora <ArrowRight />
                 </button>
-                <button type="button" className="soft-button" onClick={() => handleTabChange('booking')}>
+                <button type="button" className="soft-button" onClick={() => handleTabChange('disponibilidad')}>
                   <CalendarDays /> Ver disponibilidad en agenda
                 </button>
               </div>
