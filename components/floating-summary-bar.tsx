@@ -30,47 +30,10 @@ export function FloatingSummaryBar({
   onCopyQuote,
   onReset,
   copiedQuote,
+  stage,
 }: FloatingSummaryBarProps) {
   const [expanded, setExpanded] = useState(false);
-  const [scrolledPastHero, setScrolledPastHero] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [summaryCardInView, setSummaryCardInView] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
-
-  // Monitor window resize for responsive mode
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth > 1050);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Observe desktop summary-card to avoid redundancy when sidebar is on screen
-  useEffect(() => {
-    const cardEl = document.querySelector('.summary-card');
-    if (!cardEl) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setSummaryCardInView(entry.isIntersecting);
-      },
-      { threshold: 0.15 }
-    );
-    observer.observe(cardEl);
-    return () => observer.disconnect();
-  }, []);
-
-  // Monitor scroll position
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolledPastHero(window.scrollY > 280);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Close drawer on click outside or Escape
   useEffect(() => {
@@ -94,15 +57,16 @@ export function FloatingSummaryBar({
     };
   }, [expanded]);
 
-  // Determine whether to display:
-  // On mobile/tablet: show whenever scrolled past hero.
-  // On desktop: show whenever scrolled past hero AND summary card is not in view.
-  const shouldShow = scrolledPastHero && (!isDesktop || !summaryCardInView);
-
-  if (!shouldShow) return null;
+  // Only render while configuring set
+  if (stage !== 'design') return null;
 
   return (
-    <div className="floating-summary-container" ref={drawerRef} aria-label="Resumen de cotización flotante">
+    <div
+      className="floating-summary-container"
+      ref={drawerRef}
+      aria-label="Resumen de cotización flotante"
+      data-tour="summary"
+    >
       {/* Expandable Luxury Detail Drawer */}
       {expanded && (
         <dialog open className="floating-summary-drawer" aria-label="Detalle de tu set">

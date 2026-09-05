@@ -819,21 +819,13 @@ footer p { margin: 0; text-align: left; font-size: .63rem; line-height: 1.7; }
 .tour-actions .gold-button, .tour-actions > .inline-flex { min-height: 44px; border: 0; border-radius: 999px; background: linear-gradient(135deg,#b48739,#91651f); font-size: .72rem; }
 /* Floating 'Un set muy tú' Sticky Bar ────────────────────────── */
 .floating-summary-container {
-  position: fixed;
-  bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 55;
-  width: calc(100% - 1.5rem);
-  max-width: 600px;
-  pointer-events: auto;
-  animation: floating-bar-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  display: none; /* Desktop uses the sticky .summary-card on the right column */
 }
 
 @keyframes floating-bar-slide-up {
   from {
     opacity: 0;
-    transform: translate(-50%, 20px) scale(0.96);
+    transform: translate(-50%, 16px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -1647,9 +1639,21 @@ footer p { margin: 0; text-align: left; font-size: .63rem; line-height: 1.7; }
   .hero { min-height: auto; }
   .experience-strip { margin: -20px 1.5rem 0; }
   .builder-layout { grid-template-columns: 1fr; }
-  .summary-card { position: relative; top: auto; }
-  .summary-preview { display: none; }
-  .summary-card ul { max-height: none; }
+  .summary-card { display: none; }
+  .floating-summary-container {
+    display: block;
+    position: fixed;
+    bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 55;
+    width: calc(100% - 1.5rem);
+    max-width: 580px;
+    pointer-events: auto;
+    animation: floating-bar-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .builder-section { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+  footer { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
   .chat-assistant { right: 1rem; bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px)); }
   .booking-grid { grid-template-columns: 1fr; }
   .admin-overview { grid-template-columns: repeat(2,minmax(0,1fr)); }
