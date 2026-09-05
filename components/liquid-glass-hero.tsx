@@ -11,6 +11,8 @@ export type LiquidGlassHeroProps = {
   currentTechnique?: string;
   onSelectTechnique?: (techId: string) => void;
   totalPrice: number;
+  anchorPrice?: number;
+  discountAmount?: number;
   formatMoney: (val: number) => string;
   onStartCustomizing: () => void;
 };
@@ -135,6 +137,8 @@ export function LiquidGlassHero({
   currentTechnique = '',
   onSelectTechnique,
   totalPrice,
+  anchorPrice = 0,
+  discountAmount = 0,
   formatMoney,
   onStartCustomizing,
 }: LiquidGlassHeroProps) {
@@ -613,18 +617,33 @@ export function LiquidGlassHero({
           </div>
         </div>
 
-        {/* Bottom Floating Price Dock & CTA: Starts at 0 */}
+        {/* Bottom Floating Price Dock & CTA: Starts at 0, shows massive discount when configured */}
         <div className="liquid-glass-dock">
           <div className="glass-price-info">
-            <small>{hasSelectedTechnique ? 'Cotización estimada' : 'Cotización en vivo'}</small>
-            <strong className="price-display">
-              {formatMoney(totalPrice)}
-            </strong>
-            <span className="price-hint">
-              {hasSelectedTechnique
-                ? 'Base y largo incluidos'
-                : 'Comienza en S/ 0 · Elige opciones'}
-            </span>
+            {discountAmount > 0 && anchorPrice > totalPrice ? (
+              <>
+                <div className="anchor-crossed-row">
+                  <span className="anchor-crossed">{formatMoney(anchorPrice)}</span>
+                  <span className="discount-pill">-{formatMoney(discountAmount)} OFF</span>
+                </div>
+                <strong className="price-display">
+                  {formatMoney(totalPrice)}
+                </strong>
+                <span className="price-hint">Descuento exclusivo reserva web</span>
+              </>
+            ) : (
+              <>
+                <small>{hasSelectedTechnique ? 'Cotización estimada' : 'Cotización en vivo'}</small>
+                <strong className="price-display">
+                  {formatMoney(totalPrice)}
+                </strong>
+                <span className="price-hint">
+                  {hasSelectedTechnique
+                    ? 'Base y largo incluidos'
+                    : 'Comienza en S/ 0 · Elige opciones'}
+                </span>
+              </>
+            )}
           </div>
           <button
             type="button"
@@ -646,21 +665,21 @@ export function LiquidGlassHero({
               className="quick-tech-chip"
               onClick={() => handleTechniqueSelect('gel')}
             >
-              Gel S/ 150
+              Gel {formatMoney(180)}
             </button>
             <button
               type="button"
               className="quick-tech-chip"
               onClick={() => handleTechniqueSelect('rubber')}
             >
-              Rubber S/ 200
+              Rubber {formatMoney(235)}
             </button>
             <button
               type="button"
               className="quick-tech-chip is-gold"
               onClick={() => handleTechniqueSelect('acrylic')}
             >
-              Acrílico S/ 280
+              Acrílico {formatMoney(330)}
             </button>
           </div>
         )}

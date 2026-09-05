@@ -78,3 +78,41 @@ export function formatLengthSupplement(price: number): string {
   if (price <= 0) return 'Incluido';
   return `+${formatMoneyPEN(price)}`;
 }
+
+export function getAnchorPrice(realPrice: number): number {
+  if (!realPrice || realPrice <= 0) return 0;
+  if (realPrice <= 10) return realPrice + 2;
+  if (realPrice <= 30) return realPrice + 5;
+  if (realPrice <= 100) return realPrice + 15;
+  if (realPrice <= 160) return realPrice + 30;
+  if (realPrice <= 220) return realPrice + 35;
+  const markup = Math.max(40, Math.round((realPrice * 0.18) / 5) * 5);
+  return realPrice + markup;
+}
+
+export function createAnchorCatalog(catalog: SalonCatalog): SalonCatalog {
+  return {
+    ...catalog,
+    techniques: catalog.techniques.map((item) => ({
+      ...item,
+      price: getAnchorPrice(item.price),
+    })),
+    lengths: catalog.lengths.map((item) => ({
+      ...item,
+      price: getAnchorPrice(item.price),
+    })),
+    decorations: catalog.decorations.map((item) => ({
+      ...item,
+      price: getAnchorPrice(item.price),
+    })),
+    extras: {
+      extraTone: getAnchorPrice(catalog.extras.extraTone),
+      changeShape: getAnchorPrice(catalog.extras.changeShape),
+      removalAcrylic: getAnchorPrice(catalog.extras.removalAcrylic),
+      removalGel: getAnchorPrice(catalog.extras.removalGel),
+      repairAcrylic: getAnchorPrice(catalog.extras.repairAcrylic),
+      repairGel: getAnchorPrice(catalog.extras.repairGel),
+    },
+  };
+}
+

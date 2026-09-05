@@ -47,7 +47,9 @@ import {
 } from '@/lib/format-utils';
 import {
   calculateSetPrice,
+  createAnchorCatalog,
   formatLengthSupplement,
+  getAnchorPrice,
   getNailLengthClass,
   getTechniqueStartingPrice,
 } from '@/lib/pricing';
@@ -119,15 +121,25 @@ export default function Home() {
   const [selectedDesign, setSelectedDesign] = useState<DesignExample | null>(null);
   const galleryRef = useRef<HTMLDivElement>(null);
 
+  const anchorCatalog = useMemo(() => createAnchorCatalog(catalog), [catalog]);
+
   const techniques = catalog.techniques.filter((item) => item.active);
   const lengths = catalog.lengths.filter((item) => item.active);
   const shapes = catalog.shapes.filter((item) => item.active);
   const decorationOptions = catalog.decorations.filter((item) => item.active);
+
+  const displayTechniques = anchorCatalog.techniques.filter((item) => item.active);
+  const displayLengths = anchorCatalog.lengths.filter((item) => item.active);
+  const displayDecorations = anchorCatalog.decorations.filter((item) => item.active);
+
   const techniqueInfo = techniques.find((item) => item.id === technique) || null;
   const lengthInfo = lengths.find((item) => item.id === length) || lengths[0] || DEFAULT_CATALOG.lengths[0];
   const shapeInfo = shapes.find((item) => item.id === shape) || shapes[0] || DEFAULT_CATALOG.shapes[0];
 
-  const customTotal = useMemo(() => calculateSetPrice({
+  const anchorTechniqueInfo = displayTechniques.find((item) => item.id === technique) || null;
+  const anchorLengthInfo = displayLengths.find((item) => item.id === length) || displayLengths[0] || DEFAULT_CATALOG.lengths[0];
+
+  const realCustomTotal = useMemo(() => calculateSetPrice({
     technique: techniqueInfo,
     length: lengthInfo,
     decorations,
@@ -139,7 +151,21 @@ export default function Home() {
     extras: catalog.extras,
   }), [techniqueInfo, lengthInfo, decorationOptions, decorations, extraTones, changeShape, removal, repairs, catalog.extras]);
 
-  const total = selectedDesign?.price ?? customTotal;
+  const anchorCustomTotal = useMemo(() => calculateSetPrice({
+    technique: anchorTechniqueInfo,
+    length: anchorLengthInfo,
+    decorations,
+    decorationOptions: displayDecorations,
+    extraTones,
+    changeShape,
+    removal,
+    repairs,
+    extras: anchorCatalog.extras,
+  }), [anchorTechniqueInfo, anchorLengthInfo, displayDecorations, decorations, extraTones, changeShape, removal, repairs, anchorCatalog.extras]);
+
+  const total = selectedDesign?.price ?? realCustomTotal;
+  const anchorTotal = selectedDesign ? getAnchorPrice(selectedDesign.price) : anchorCustomTotal;
+  const discountAmount = Math.max(0, anchorTotal - total);
 
   const selectedDecorations = decorationOptions.filter((item) => (decorations[item.id] || 0) > 0);
   const lengthSupplement = techniqueInfo?.usesLengths && lengthInfo.price > 0 ? ` (+${formatMoney(lengthInfo.price)})` : '';
@@ -339,6 +365,8 @@ export default function Home() {
       businessName: catalog.businessName,
       summary,
       total,
+      anchorTotal,
+      discount: discountAmount,
       whatsapp: catalog.whatsapp,
     });
     try {
@@ -404,7 +432,9 @@ export default function Home() {
         `Servicio(s): ${summary.join(', ')}`,
         `Fecha: ${displayDate}`,
         `Hora: ${selectedTime}`,
-        `Precio estimado: ${formatMoney(total)}`,
+        discountAmount > 0 ? `Precio regular en salón: ${formatMoney(anchorTotal)}` : '',
+        discountAmount > 0 ? `Descuento exclusivo web: -${formatMoney(discountAmount)} 🏷️` : '',
+        `Total final a pagar: ${formatMoney(total)}`,
       ].filter(Boolean).join('\n');
       window.location.href = `https://wa.me/${catalog.whatsapp}?text=${encodeURIComponent(message)}`;
     } catch (bookingError) {
@@ -464,6 +494,8 @@ export default function Home() {
             currentTechnique={technique}
             onSelectTechnique={(newTech) => setTechnique(newTech)}
             totalPrice={total}
+            anchorPrice={anchorTotal}
+            discountAmount={discountAmount}
             formatMoney={formatMoney}
             onStartCustomizing={() => {
               document.querySelector('#calculadora')?.scrollIntoView({ behavior: 'smooth' });
@@ -488,21 +520,27 @@ export default function Home() {
             </div>
           </div>
           <div className="design-carousel" ref={galleryRef}>
-            {designExamples.map((item) => (
-              <article key={item.id} className="design-card">
-                <img src={item.imageData} alt={item.title} loading="lazy" />
-                <div className="design-card-content">
-                  <div className="design-card-header">
-                    <h3>{item.title}</h3>
-                    <span className="design-tag">{formatMoney(item.price)}</span>
+            {designExamples.map((item) => {
+              const anchorPrice = getAnchorPrice(item.price);
+              return (
+                <article key={item.id} className="design-card">
+                  <img src={item.imageData} alt={item.title} loading="lazy" />
+                  <div className="design-card-content">
+                    <div className="design-card-header">
+                      <h3>{item.title}</h3>
+                      <div className="flex flex-col items-end">
+                        <span className="line-through text-xs text-[#9c8a82]">{formatMoney(anchorPrice)}</span>
+                        <span className="design-tag">{formatMoney(item.price)}</span>
+                      </div>
+                    </div>
+                    <p>{item.description || 'Set de catálogo listo para replicar con técnica y acabado profesional.'}</p>
+                    <button type="button" className="gold-button w-full justify-center" onClick={() => replicateDesign(item)}>
+                      Replicar este set <ArrowRight />
+                    </button>
                   </div>
-                  <p>{item.description || 'Set de catálogo listo para replicar con técnica y acabado profesional.'}</p>
-                  <button type="button" className="gold-button w-full justify-center" onClick={() => replicateDesign(item)}>
-                    Replicar este set <ArrowRight />
-                  </button>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </section>
       )}
@@ -519,13 +557,13 @@ export default function Home() {
             <div className="step-card">
               <div className="step-title"><span>01</span><div><h3>Elige tu técnica</h3><p>La base perfecta para tu estilo.</p></div></div>
               <div className="technique-grid" data-tour="technique">
-                {techniques.map((item) => (
+                {displayTechniques.map((item) => (
                   <button key={item.id} type="button" className={`technique-card ${technique === item.id ? 'selected' : ''}`} onClick={() => setTechnique(item.id)} aria-pressed={technique === item.id}>
                     <span className="technique-icon">{item.id === 'acrylic' ? <Gem /> : item.id === 'gel' ? <Heart /> : <Sparkles />}</span>
                     <span><strong>{item.name}</strong><small>{item.note}</small></span>
                     <span className="technique-price">
-                      {item.usesLengths && lengths.length
-                        ? `desde ${formatMoney(getTechniqueStartingPrice(item, lengths))}`
+                      {item.usesLengths && displayLengths.length
+                        ? `desde ${formatMoney(getTechniqueStartingPrice(item, displayLengths))}`
                         : formatMoney(item.price)}
                     </span>
                     {technique === item.id && <span className="selected-check"><Check /></span>}
@@ -538,7 +576,7 @@ export default function Home() {
               <div className="step-card">
                 <div className="step-title"><span>02</span><div><h3>Define el largo</h3><p>Del natural al extra largo.</p></div></div>
                 <div className="length-grid">
-                  {lengths.map((item, index) => (
+                  {displayLengths.map((item, index) => (
                     <button
                       key={item.id}
                       type="button"
@@ -569,7 +607,7 @@ export default function Home() {
             <div className="step-card">
               <div className="step-title"><span>{techniqueInfo?.usesLengths ? '04' : '03'}</span><div><h3>Agrega decoraciones</h3><p>Selecciona cuántas uñas llevarán cada diseño.</p></div></div>
               <div className="decoration-grid" data-tour="decorations">
-                {decorationOptions.slice(0, showAll ? decorationOptions.length : 10).map((item) => (
+                {displayDecorations.slice(0, showAll ? displayDecorations.length : 10).map((item) => (
                   <div className={`decoration-row ${(decorations[item.id] || 0) > 0 ? 'selected' : ''}`} key={item.id}>
                     <span className="decor-icon">{item.icon}</span>
                     <span className="decor-name"><strong>{item.name}</strong><small>{formatMoney(item.price)} / uña</small></span>
@@ -585,12 +623,12 @@ export default function Home() {
             <div className="step-card">
               <div className="step-title"><span>{techniqueInfo?.usesLengths ? '05' : '04'}</span><div><h3>Últimos detalles</h3><p>Personaliza tonos, retiro y reposiciones.</p></div></div>
               <div className="extras-grid" data-tour="extras">
-                <div className="extra-control"><span><WandSparkles /><span><strong>Tonos lisos extra</strong><small>2 tonos incluidos · {formatMoney(catalog.extras.extraTone)} por tono adicional</small></span></span><Counter label="tonos extra" value={extraTones} onChange={setExtraTones} /></div>
-                <div className="extra-control"><span><Sparkles /><span><strong>Cambio de forma</strong><small>{formatMoney(catalog.extras.changeShape)} por set</small></span></span><button type="button" className={`toggle-pill ${changeShape ? 'active' : ''}`} onClick={() => setChangeShape((value) => !value)} aria-pressed={changeShape}>{changeShape ? 'Incluido' : 'No'}</button></div>
-                <div className="extra-control"><span><Sparkles /><span><strong>Retiro acrílico</strong><small>{formatMoney(catalog.extras.removalAcrylic)} por uña</small></span></span><Counter label="retiro acrílico" value={removal.acrylic} onChange={(value) => setRemoval((current) => ({ ...current, acrylic: value }))} /></div>
-                <div className="extra-control"><span><Sparkles /><span><strong>Retiro gel</strong><small>{formatMoney(catalog.extras.removalGel)} por uña</small></span></span><Counter label="retiro gel" value={removal.gel} onChange={(value) => setRemoval((current) => ({ ...current, gel: value }))} /></div>
-                <div className="extra-control"><span><WandSparkles /><span><strong>Reposición acrílico</strong><small>{formatMoney(catalog.extras.repairAcrylic)} por uña</small></span></span><Counter label="reposición acrílico" value={repairs.acrylic} onChange={(value) => setRepairs((current) => ({ ...current, acrylic: value }))} /></div>
-                <div className="extra-control"><span><WandSparkles /><span><strong>Reposición gel</strong><small>{formatMoney(catalog.extras.repairGel)} por uña</small></span></span><Counter label="reposición gel" value={repairs.gel} onChange={(value) => setRepairs((current) => ({ ...current, gel: value }))} /></div>
+                <div className="extra-control"><span><WandSparkles /><span><strong>Tonos lisos extra</strong><small>2 tonos incluidos · {formatMoney(anchorCatalog.extras.extraTone)} por tono adicional</small></span></span><Counter label="tonos extra" value={extraTones} onChange={setExtraTones} /></div>
+                <div className="extra-control"><span><Sparkles /><span><strong>Cambio de forma</strong><small>{formatMoney(anchorCatalog.extras.changeShape)} por set</small></span></span><button type="button" className={`toggle-pill ${changeShape ? 'active' : ''}`} onClick={() => setChangeShape((value) => !value)} aria-pressed={changeShape}>{changeShape ? 'Incluido' : 'No'}</button></div>
+                <div className="extra-control"><span><Sparkles /><span><strong>Retiro acrílico</strong><small>{formatMoney(anchorCatalog.extras.removalAcrylic)} por uña</small></span></span><Counter label="retiro acrílico" value={removal.acrylic} onChange={(value) => setRemoval((current) => ({ ...current, acrylic: value }))} /></div>
+                <div className="extra-control"><span><Sparkles /><span><strong>Retiro gel</strong><small>{formatMoney(anchorCatalog.extras.removalGel)} por uña</small></span></span><Counter label="retiro gel" value={removal.gel} onChange={(value) => setRemoval((current) => ({ ...current, gel: value }))} /></div>
+                <div className="extra-control"><span><WandSparkles /><span><strong>Reposición acrílico</strong><small>{formatMoney(anchorCatalog.extras.repairAcrylic)} por uña</small></span></span><Counter label="reposición acrílico" value={repairs.acrylic} onChange={(value) => setRepairs((current) => ({ ...current, acrylic: value }))} /></div>
+                <div className="extra-control"><span><WandSparkles /><span><strong>Reposición gel</strong><small>{formatMoney(anchorCatalog.extras.repairGel)} por uña</small></span></span><Counter label="reposición gel" value={repairs.gel} onChange={(value) => setRepairs((current) => ({ ...current, gel: value }))} /></div>
               </div>
             </div>
           </div>
@@ -608,11 +646,32 @@ export default function Home() {
             </div>
             <ul>{summary.map((item) => <li key={item}><Check />{item}</li>)}</ul>
             <div className="summary-total">
-              <span>
-                Precio estimado
-                <small>{technique ? 'Soles · sujeto a valoración' : 'Comienza en S/ 0'}</small>
-              </span>
-              <strong>{formatMoney(total)}</strong>
+              {discountAmount > 0 ? (
+                <div className="summary-discount-box">
+                  <div className="summary-discount-row">
+                    <span>Precio en salón:</span>
+                    <span className="line-through-price">{formatMoney(anchorTotal)}</span>
+                  </div>
+                  <div className="summary-discount-row promo-highlight">
+                    <span className="promo-badge">
+                      <Sparkles className="w-3.5 h-3.5" /> Descuento web aplicado:
+                    </span>
+                    <strong className="promo-value">-{formatMoney(discountAmount)}</strong>
+                  </div>
+                  <div className="summary-discount-row final-row">
+                    <span>Total final a pagar:</span>
+                    <strong className="final-total">{formatMoney(total)}</strong>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <span>
+                    Precio estimado
+                    <small>{technique ? 'Soles · sujeto a valoración' : 'Comienza en S/ 0'}</small>
+                  </span>
+                  <strong>{formatMoney(total)}</strong>
+                </>
+              )}
             </div>
             <Button className="summary-cta" onClick={goToBooking}>
               {technique || selectedDesign ? <>Elegir fecha <ArrowRight /></> : <>Elegir técnica <ArrowRight /></>}
@@ -632,7 +691,18 @@ export default function Home() {
 
       {stage === 'booking' && (
         <section id="booking" className="booking-section">
-          <div className="booking-header"><div><p className="eyebrow">Tu momento</p><h2>Agenda tu cita</h2><p>{selectedDesign ? `Reservando “${selectedDesign.title}”. Completa tus datos y elige un horario.` : 'Elige una fecha disponible y el horario que mejor te quede.'}</p></div><div className="booking-total"><span>Tu set</span><strong>{formatMoney(total)}</strong></div></div>
+          <div className="booking-header">
+            <div>
+              <p className="eyebrow">Tu momento</p>
+              <h2>Agenda tu cita</h2>
+              <p>{selectedDesign ? `Reservando “${selectedDesign.title}”. Completa tus datos y elige un horario.` : 'Elige una fecha disponible y el horario que mejor te quede.'}</p>
+            </div>
+            <div className="booking-total">
+              <span>{discountAmount > 0 ? 'Total con beneficio web' : 'Tu set'}</span>
+              {discountAmount > 0 && <small className="booking-anchor-crossed">{formatMoney(anchorTotal)}</small>}
+              <strong>{formatMoney(total)}</strong>
+            </div>
+          </div>
           <div className="booking-grid">
             <div className="booking-form" data-tour="client-data">
               <label htmlFor="name">Nombre de la clienta</label>

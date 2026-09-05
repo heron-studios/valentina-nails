@@ -5,6 +5,8 @@ import {
   getNailLengthClass,
   getTechniqueStartingPrice,
   formatLengthSupplement,
+  getAnchorPrice,
+  createAnchorCatalog,
 } from '../lib/pricing.ts';
 import { normalizeCatalog, type TechniqueItem, type CatalogItem } from '../lib/catalog.ts';
 
@@ -143,4 +145,33 @@ test('normalizeCatalog auto-activates usesLengths on extension techniques when l
   assert.equal(acrylic?.usesLengths, true);
   assert.equal(polygel?.usesLengths, true);
   assert.equal(semi?.usesLengths, false);
+});
+
+test('getAnchorPrice increases small prices by 2 Soles (3 -> 5) and 0 remains 0', () => {
+  assert.equal(getAnchorPrice(0), 0);
+  assert.equal(getAnchorPrice(3), 5);
+  assert.equal(getAnchorPrice(5), 7);
+  assert.equal(getAnchorPrice(10), 12);
+});
+
+test('getAnchorPrice increases medium and base services with a credible discount margin', () => {
+  assert.equal(getAnchorPrice(20), 25);
+  assert.equal(getAnchorPrice(40), 55);
+  assert.equal(getAnchorPrice(150), 180);
+  assert.equal(getAnchorPrice(200), 235);
+  assert.equal(getAnchorPrice(280), 330);
+});
+
+test('createAnchorCatalog applies anchor pricing across all catalog entities', () => {
+  const catalog = normalizeCatalog({
+    techniques: [{ id: 't1', name: 'Gel', price: 150, usesLengths: false, active: true, note: '' }],
+    lengths: [{ id: 'l1', name: 'L1', price: 4, active: true }],
+    decorations: [{ id: 'd1', name: 'Deco', price: 3, icon: '✨', active: true }],
+  });
+
+  const anchor = createAnchorCatalog(catalog);
+  assert.equal(anchor.techniques[0].price, 180);
+  assert.equal(anchor.lengths[0].price, 6);
+  assert.equal(anchor.decorations[0].price, 5);
+  assert.equal(catalog.techniques[0].price, 150); // Original catalog remains unchanged
 });

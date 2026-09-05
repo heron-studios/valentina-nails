@@ -34,19 +34,26 @@ export function generateQuoteShareText(params: {
   summary: string[];
   total: number;
   whatsapp: string;
+  anchorTotal?: number;
+  discount?: number;
 }): string {
-  const { businessName, clientName, summary, total, whatsapp } = params;
+  const { businessName, clientName, summary, total, whatsapp, anchorTotal, discount } = params;
   const brand = businessName?.trim() || 'Valentina Nails by Priscila';
   const greeting = clientName ? `Cotización para ${clientName.trim()} en ${brand}` : `Mi cotización en ${brand}`;
-  return [
+  const lines = [
     `🌸 ${greeting} 🌸`,
     '',
     'Detalle del set:',
     ...summary.map((item) => `• ${item}`),
     '',
-    `Total estimado: ${formatMoneyPEN(total)} (Soles)`,
-    '',
-    'Para agendar o consultar:',
-    `WhatsApp: https://wa.me/${whatsapp}`,
-  ].join('\n');
+  ];
+  if (discount && discount > 0 && anchorTotal && anchorTotal > total) {
+    lines.push(`Precio regular en salón: ${formatMoneyPEN(anchorTotal)}`);
+    lines.push(`Descuento reserva web: -${formatMoneyPEN(discount)} 🏷️`);
+  }
+  lines.push(`Total final a pagar: ${formatMoneyPEN(total)} (Soles)`);
+  lines.push('');
+  lines.push('Para agendar o consultar:');
+  lines.push(`WhatsApp: https://wa.me/${whatsapp}`);
+  return lines.join('\n');
 }

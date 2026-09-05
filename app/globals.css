@@ -415,6 +415,30 @@ svg { stroke-width: 1.7; }
   color: #8c7a72;
   font-weight: 500;
 }
+.anchor-crossed-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.1rem;
+}
+.anchor-crossed {
+  text-decoration: line-through;
+  font-size: 0.78rem;
+  color: #a4948d;
+  font-weight: 500;
+}
+.discount-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.62rem;
+  font-weight: 750;
+  padding: 0.12rem 0.48rem;
+  border-radius: 999px;
+  background: #fef2ee;
+  color: #c4432b;
+  border: 1px solid rgba(196, 67, 43, 0.22);
+  letter-spacing: 0.02em;
+}
 
 .glass-dock-cta {
   display: inline-flex;
@@ -612,6 +636,77 @@ svg { stroke-width: 1.7; }
 .summary-total span { font-family: var(--font-heading), Georgia, serif; font-size: 1.05rem; }
 .summary-total small { display: block; margin-top: .25rem; color: #91847e; font-family: var(--font-geist-sans); font-size: .56rem; }
 .summary-total strong { font-family: var(--font-heading), Georgia, serif; font-size: 2.15rem; font-weight: 500; color: #996b20; }
+.summary-discount-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #fff8f5;
+  border: 1px dashed #e8cbbf;
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+}
+.summary-discount-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: #7d6b63;
+}
+.summary-discount-row .line-through-price {
+  text-decoration: line-through;
+  color: #a69891;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.summary-discount-row.promo-highlight {
+  color: #c4432b;
+  font-weight: 600;
+  background: rgba(235, 94, 69, 0.07);
+  padding: 0.32rem 0.55rem;
+  border-radius: 0.55rem;
+  margin: 0 -0.15rem;
+}
+.promo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.72rem;
+}
+.promo-badge svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: #c4432b;
+}
+.promo-value {
+  color: #c4432b;
+  font-weight: 750;
+  font-size: 0.92rem;
+}
+.summary-discount-row.final-row {
+  margin-top: 0.25rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid #ebd9d2;
+  color: #2b2320;
+  font-weight: 600;
+}
+.summary-discount-row.final-row span {
+  font-family: var(--font-heading), Georgia, serif;
+  font-size: 0.98rem;
+}
+.summary-discount-row.final-row .final-total {
+  font-family: var(--font-heading), Georgia, serif;
+  font-size: 1.85rem;
+  font-weight: 500;
+  color: #996b20;
+}
+.booking-anchor-crossed {
+  text-decoration: line-through;
+  color: #a69891;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
 .summary-cta { width: 100%; height: 3rem; margin-top: 1.2rem; border-radius: 999px; background: linear-gradient(135deg,#b48739,#91651f); font-size: .78rem; font-weight: 750; box-shadow: 0 8px 24px rgba(180,135,57,.25); }
 .summary-cta svg { width: 1rem; }
 .copy-quote-button { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; width: 100%; min-height: 42px; margin-top: .6rem; border: 1px solid #dfcec5; border-radius: 999px; background: #fff; color: #6e5f58; font-size: .74rem; font-weight: 700; cursor: pointer; transition: all .2s ease; }
