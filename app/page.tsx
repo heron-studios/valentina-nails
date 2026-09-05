@@ -39,8 +39,10 @@ import { LiquidGlassHero } from '@/components/liquid-glass-hero';
 import { ChatAssistant } from '@/components/chat-assistant';
 import { FloatingSummaryBar } from '@/components/floating-summary-bar';
 import { AvailabilityView } from '@/components/availability-view';
+import { BookingSuccessModal } from '@/components/booking-success-modal';
 import { auth, db } from '@/lib/firebase';
 import { DEFAULT_CATALOG, normalizeCatalog, type SalonCatalog } from '@/lib/catalog';
+import { generateAIAppointmentAdvice, type AIAppointmentAdvice } from '@/lib/ai-advisor';
 import {
   formatBookingDatePEN,
   formatMoneyPEN,
@@ -150,6 +152,10 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successAdvice, setSuccessAdvice] = useState<AIAppointmentAdvice | null>(null);
+  const [successWaUrl, setSuccessWaUrl] = useState('');
+  const [successDateDisplay, setSuccessDateDisplay] = useState('');
   const [copiedQuote, setCopiedQuote] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -495,7 +501,31 @@ export default function Home() {
         discountAmount > 0 ? `Descuento exclusivo web: -${formatMoney(discountAmount)} 🏷️` : '',
         `Total final a pagar: ${formatMoney(total)}`,
       ].filter(Boolean).join('\n');
-      window.location.href = `https://wa.me/${catalog.whatsapp}?text=${encodeURIComponent(message)}`;
+      const waUrl = `https://wa.me/${catalog.whatsapp}?text=${encodeURIComponent(message)}`;
+
+      // Generate AI Appointment Advice dynamically using active live catalog
+      const advice = generateAIAppointmentAdvice({
+        clientName: clientName.trim(),
+        techniqueId: technique,
+        lengthId: length,
+        shapeId: shape,
+        decorations,
+        extraTones,
+        changeShape,
+        removalAcrylic: removal.acrylic,
+        bookingDate: dateKey(selectedDate),
+        bookingTime: selectedTime,
+        catalog,
+        total,
+      });
+
+      setSuccessAdvice(advice);
+      setSuccessWaUrl(waUrl);
+      setSuccessDateDisplay(displayDate);
+      setShowSuccessModal(true);
+
+      // Open WhatsApp in a separate window/tab without closing or leaving the website!
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
     } catch (bookingError) {
       setError(bookingError instanceof Error ? bookingError.message : 'Ocurrió un error. Intenta otra vez.');
     } finally {
@@ -1215,9 +1245,19 @@ export default function Home() {
                       </p>
                     )}
                     {confirmed && (
-                      <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center flex items-center justify-center gap-1.5">
-                        <Check className="w-3.5 h-3.5" /> Cita guardada. Abriendo WhatsApp…
-                      </p>
+                      <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                          <span>Cita guardada con éxito.</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowSuccessModal(true)}
+                          className="px-2.5 py-1 text-[0.68rem] font-semibold bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition-colors cursor-pointer"
+                        >
+                          Ver asesoría IA
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -1398,6 +1438,20 @@ export default function Home() {
             </div>
           </dialog>
         </>
+      )}
+
+      {showSuccessModal && successAdvice && (
+        <BookingSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          clientName={clientName.trim()}
+          displayDate={successDateDisplay}
+          selectedTime={selectedTime}
+          total={total}
+          discountAmount={discountAmount}
+          waUrl={successWaUrl}
+          advice={successAdvice}
+        />
       )}
     </main>
   );

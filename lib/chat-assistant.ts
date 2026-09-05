@@ -146,9 +146,17 @@ export function generateLocalBotResponse(params: {
     q.includes('baby boomer') ||
     q.includes('hoja de oro')
   ) {
+    const activeDecors = catalog.decorations.filter((d) => d.active);
+    const decorPrices = activeDecors.map((d) => d.price);
+    const minDecor = decorPrices.length ? Math.min(...decorPrices) : 3;
+    const maxDecor = decorPrices.length ? Math.max(...decorPrices) : 10;
+    const popularHighlights = ['Ojo de gato', 'Espejo', 'Aurora', 'Francés', 'Relieve', 'Cristales'];
+    const availableHighlights = popularHighlights
+      .filter((name) => activeDecors.some((d) => d.name.toLowerCase().includes(name.toLowerCase())))
+      .join(', ');
     return {
       answer:
-        'Contamos con más de 20 decoraciones de lujo aplicadas por uña:\n• **Efectos:** Ojo de gato, Espejo, Aurora, Azúcar (desde S/ 3 a S/ 5).\n• **Arte:** Francés, Blooming, Relieve, 3D y Baby boomer (desde S/ 3 a S/ 10).\n• **Joyería:** Cristales y uñas full cristal (desde S/ 10 a S/ 55).\n\nPuedes agregar exactamente la cantidad de uñas decoradas que desees en la calculadora.',
+        `Contamos con más de ${activeDecors.length} decoraciones de lujo aplicadas por uña (${availableHighlights || 'Ojo de gato, Espejo, Aurora'}… con tarifas actuales desde **${formatMoneySoles(minDecor)}** hasta **${formatMoneySoles(maxDecor)}** según el diseño artesanal).\n\nPuedes agregar exactamente la cantidad de uñas decoradas que desees en la calculadora.`,
       action: { type: 'calculator', label: 'Elegir decoraciones' },
       suggestions: ['Ver fotos de diseños', '¿Cuál es mi precio?', '¿Cómo agendo?'],
     };
